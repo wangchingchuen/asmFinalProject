@@ -1,7 +1,6 @@
 @echo off
 REM ===================================================
 REM x86 ASM Game Project Compile Script
-REM 針對 emily 的電腦設定
 REM ===================================================
 
 setlocal enabledelayedexpansion
@@ -15,8 +14,24 @@ set OUTPUT=%BIN_DIR%\game.exe
 
 REM 使用正確的 MASM 路徑
 set ASSEMBLER="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\ml.exe"
+
+REM 尋找 link.exe
+for /f "delims=" %%i in ('where link.exe 2^>nul') do (
+    set LINKER=%%i
+    goto found_linker
+)
+
+REM 嘗試常見位置
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\link.exe" (
+    set LINKER="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\link.exe"
+    goto found_linker
+)
+
 set LINKER=link.exe
 
+:found_linker
+
+cls
 echo.
 echo ===================================================
 echo  x86 ASM Game Project - Compiler
@@ -25,95 +40,85 @@ echo.
 
 REM 檢查編譯器是否存在
 if not exist %ASSEMBLER% (
-    echo [錯誤] 找不到 ml.exe！
-    echo 路徑: %ASSEMBLER%
+    echo Error: ml.exe not found!
+    echo Path: %ASSEMBLER%
     pause
     exit /b 1
 )
 
-echo [✓] 找到編譯器
-echo.
-
-%LINKER% >nul 2>&1
-if errorlevel 1 (
-    echo [錯誤] 找不到 link.exe 連接器！
-    pause
-    exit /b 1
-)
-
-echo [✓] 編譯器和連接器檢查完成
+echo [OK] Assembler found
 echo.
 
 REM 建立必要的目錄
 if not exist %OBJ_DIR% (
     mkdir %OBJ_DIR%
-    echo [✓] 建立 %OBJ_DIR% 目錄
+    echo [OK] Created %OBJ_DIR% directory
 )
 
 if not exist %BIN_DIR% (
     mkdir %BIN_DIR%
-    echo [✓] 建立 %BIN_DIR% 目錄
+    echo [OK] Created %BIN_DIR% directory
 )
 
 echo.
-echo ===== 開始編譯 =====
+echo ===== Start Compiling =====
 echo.
 
 REM 清理舊的 OBJ 檔案
-echo [清理] 移除舊的 OBJ 檔案...
+echo [Clean] Removing old object files...
 del /q %OBJ_DIR%\*.obj >nul 2>&1
 
 REM 編譯 SRC 目錄的檔案
 echo.
-echo [編譯] src 目錄...
+echo [Compile] src directory...
 
 %ASSEMBLER% /Fo%OBJ_DIR%\main.obj %SRC_DIR%\main.asm
 if errorlevel 1 goto compile_error
-echo   ✓ main.asm
+echo   [OK] main.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\input.obj %SRC_DIR%\input.asm
 if errorlevel 1 goto compile_error
-echo   ✓ input.asm
+echo   [OK] input.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\game_logic.obj %SRC_DIR%\game_logic.asm
 if errorlevel 1 goto compile_error
-echo   ✓ game_logic.asm
+echo   [OK] game_logic.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\display.obj %SRC_DIR%\display.asm
 if errorlevel 1 goto compile_error
-echo   ✓ display.asm
+echo   [OK] display.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\math.obj %SRC_DIR%\math.asm
 if errorlevel 1 goto compile_error
-echo   ✓ math.asm
+echo   [OK] math.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\boss.obj %SRC_DIR%\boss.asm
 if errorlevel 1 goto compile_error
-echo   ✓ boss.asm
+echo   [OK] boss.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\delay.obj %SRC_DIR%\delay.asm
 if errorlevel 1 goto compile_error
-echo   ✓ delay.asm
+echo   [OK] delay.asm
 
 REM 編譯 DATA 目錄的檔案
 echo.
-echo [編譯] data 目錄...
+echo [Compile] data directory...
 
 %ASSEMBLER% /Fo%OBJ_DIR%\levels.obj %DATA_DIR%\levels.asm
 if errorlevel 1 goto compile_error
-echo   ✓ levels.asm
+echo   [OK] levels.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\strings.obj %DATA_DIR%\strings.asm
 if errorlevel 1 goto compile_error
-echo   ✓ strings.asm
+echo   [OK] strings.asm
 
 %ASSEMBLER% /Fo%OBJ_DIR%\constants.obj %DATA_DIR%\constants.asm
 if errorlevel 1 goto compile_error
-echo   ✓ constants.asm
+echo   [OK] constants.asm
 
 REM 連接所有 OBJ 檔案
 echo.
-echo [連接] 生成可執行檔...
+echo [Link] Generating executable...
 
 %LINKER% %OBJ_DIR%\main.obj %OBJ_DIR%\input.obj %OBJ_DIR%\game_logic.obj ^
          %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj ^
@@ -124,21 +129,16 @@ if errorlevel 1 goto link_error
 
 echo.
 echo ===================================================
-echo  [成功] 編譯完成！
-echo  可執行檔: %OUTPUT%
+echo  [SUCCESS] Compilation Complete!
+echo  Executable: %OUTPUT%
 echo ===================================================
 echo.
 
 REM 詢問是否執行遊戲
-set /p RUN="是否立即執行遊戲? (Y/N): "
+set /p RUN="Run game now? (Y/N): "
 if /i "%RUN%"=="Y" (
     %OUTPUT%
 ) else (
-    echo.
-    echo 命令：
-    echo   - 編譯: compile.bat
-    echo   - 執行: %OUTPUT%
-    echo   - 清理: clean.bat
     echo.
     pause
 )
@@ -149,7 +149,7 @@ REM 錯誤處理
 :compile_error
 echo.
 echo ===================================================
-echo  [錯誤] 編譯失敗！
+echo  [ERROR] Compilation failed!
 echo ===================================================
 echo.
 pause
@@ -158,7 +158,7 @@ exit /b 1
 :link_error
 echo.
 echo ===================================================
-echo  [錯誤] 連接失敗！
+echo  [ERROR] Linking failed!
 echo ===================================================
 echo.
 pause
