@@ -1,33 +1,61 @@
 @echo off
-REM ===================================================
-REM Clean Compiled Files
-REM ===================================================
+REM ============================================
+REM Clean batch file for Windows 32-bit Assembly
+REM Removes all build artifacts
+REM ============================================
 
-echo.
-echo ===================================================
-echo  清理編譯輸出...
-echo ===================================================
-echo.
+REM Set console to English
+chcp 437 > nul
 
-if exist obj (
-    echo [刪除] obj 資料夾...
-    rmdir /s /q obj
-    echo ✓ obj 已刪除
-) else (
-    echo   obj 資料夾不存在
+echo ============================================
+echo Cleaning build files...
+echo ============================================
+
+REM Clean executable files
+if exist bin\*.exe (
+    echo Deleting executable files...
+    del /Q bin\*.exe
 )
 
-if exist bin (
-    echo [刪除] bin 資料夾...
-    rmdir /s /q bin
-    echo ✓ bin 已刪除
-) else (
-    echo   bin 資料夾不存在
+REM Clean object files
+if exist obj\*.obj (
+    echo Deleting object files...
+    del /Q obj\*.obj
+)
+
+REM Clean debug files
+if exist bin\*.pdb (
+    echo Deleting debug files (bin)...
+    del /Q bin\*.pdb
+)
+
+if exist obj\*.pdb (
+    echo Deleting debug files (obj)...
+    del /Q obj\*.pdb
+)
+
+REM Clean incremental link files
+if exist bin\*.ilk (
+    echo Deleting incremental link files...
+    del /Q bin\*.ilk
+)
+
+REM Clean listing files
+if exist obj\*.lst (
+    echo Deleting listing files...
+    del /Q obj\*.lst
+)
+
+REM Clean map files
+if exist bin\*.map (
+    echo Deleting map files...
+    del /Q bin\*.map
 )
 
 echo.
-echo ===================================================
-echo  清理完成！
-echo ===================================================
-echo.
+echo ============================================
+echo Clean completed!
+echo ============================================
+
 pause
+exit /b 0

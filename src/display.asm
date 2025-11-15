@@ -1,244 +1,277 @@
 ; ============================================
-; display.asm
-; 顯示模組 - 螢幕輸出和 UI
+; display.asm  
+; 顯示處理模組 - Windows 32-bit
 ; ============================================
 
-.model small
+.386
+.model flat, stdcall
+option casemap:none
 
-include constants.asm
-include strings.asm
+; Windows API
+GetStdHandle PROTO :DWORD
+WriteConsoleA PROTO :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+SetConsoleCursorPosition PROTO :DWORD, :DWORD
+GetConsoleScreenBufferInfo PROTO :DWORD, :DWORD
+FillConsoleOutputCharacterA PROTO :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
+SetConsoleTextAttribute PROTO :DWORD, :DWORD
 
-data segment public
-    temp_num    dw 0
-    num_buffer  db 10 dup(0)
-data ends
+; 常數定義
+STD_OUTPUT_HANDLE equ -11
 
-code segment public
+; 顏色屬性
+COLOR_BLACK     equ 0
+COLOR_BLUE      equ 1
+COLOR_GREEN     equ 2
+COLOR_CYAN      equ 3
+COLOR_RED       equ 4
+COLOR_MAGENTA   equ 5
+COLOR_YELLOW    equ 6
+COLOR_WHITE     equ 7
+COLOR_BRIGHT    equ 8
 
-    assume cs:code, ds:data
+.data
+    hStdOutput      dd 0
+    bytesWritten    dd 0
+    consoleInfo     db 22 dup(0)  ; CONSOLE_SCREEN_BUFFER_INFO 結構
+    newline_str     db 13, 10, 0
 
-; ═══════════════════════════════════════
-; 清屏 (使用 INT 10H)
-; ═══════════════════════════════════════
-public clear_screen
+.code
 
-clear_screen proc far
-    
-    mov ax, 0600h                   ; AH=6 (捲動), AL=0 (清空)
-    mov bh, 07h                     ; BH=顏色屬性 (白底黑字)
-    mov cx, 0000h                   ; 左上角 (0,0)
-    mov dx, 184Fh                   ; 右下角 (24,79)
-    int 10h
-    
-    ; 定位光標到 (0,0)
-    mov ah, 02h
-    mov bh, 00h
-    mov dx, 0000h
-    int 10h
-    
+; ============================================
+; 初始化顯示系統
+; ============================================
+PUBLIC init_display@0
+init_display@0 PROC
+    push STD_OUTPUT_HANDLE
+    call GetStdHandle
+    mov hStdOutput, eax
     ret
-    
-clear_screen endp
+init_display@0 ENDP
 
-; ═══════════════════════════════════════
-; 打印字符串
-; 輸入: DS:DX = 字符串位址 (以 '$' 結尾)
-; ═══════════════════════════════════════
-public print_string
-
-print_string proc far
+; ============================================
+; 清除螢幕
+; ============================================
+PUBLIC clear_screen@0
+clear_screen@0 PROC
+    push ebp
+    mov ebp, esp
+    sub esp, 8
     
-    mov ah, 09h
-    int 21h
+    ; 取得控制台資訊
+    push OFFSET consoleInfo
+    push hStdOutput
+    call GetConsoleScreenBufferInfo
     
+    ; 計算螢幕大小 (寬 * 高)
+    movzx eax, WORD PTR [consoleInfo]      ; X (寬)
+    movzx ecx, WORD PTR [consoleInfo+2]    ; Y (高)
+    mul ecx
+    mov [ebp-4], eax  ; 儲存總字元數
+    
+    ; 填充空白字元
+    lea eax, [ebp-8]
+    push eax          ; 寫入的字元數
+    push 0            ; 起始座標 (0,0)
+    push [ebp-4]      ; 字元數
+    push 20h          ; 空白字元
+    push hStdOutput
+    call FillConsoleOutputCharacterA
+    
+    ; 設定游標位置到左上角
+    push 0  ; 座標 (0,0)
+    push hStdOutput
+    call SetConsoleCursorPosition
+    
+    mov esp, ebp
+    pop ebp
     ret
-    
-print_string endp
+clear_screen@0 ENDP
 
-; ═══════════════════════════════════════
-; 打印新行
-; ═══════════════════════════════════════
-public print_newline
+; ============================================
+; 設定游標位置
+; 輸入: EAX = X座標, EDX = Y座標
+; ============================================
+PUBLIC set_cursor@8
+set_cursor@8 PROC
+    push ebp
+    mov ebp, esp
+    
+    ; 組合座標 (Y << 16 | X)
+    mov eax, [ebp+8]   ; X
+    mov edx, [ebp+12]  ; Y
+    shl edx, 16
+    or edx, eax
+    
+    push edx
+    push hStdOutput
+    call SetConsoleCursorPosition
+    
+    pop ebp
+    ret 8
+set_cursor@8 ENDP
 
-print_newline proc far
+; ============================================
+; 顯示字串
+; 輸入: 堆疊上推入字串位址
+; ============================================
+PUBLIC print_string@4
+print_string@4 PROC
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
     
-    mov ah, 02h
-    mov dl, 0Dh                     ; 回車
-    int 21h
+    mov esi, [ebp+8]  ; 字串位址
     
-    mov ah, 02h
-    mov dl, 0Ah                     ; 換行
-    int 21h
+    ; 計算字串長度
+    xor ebx, ebx
+count_loop:
+    mov al, [esi+ebx]
+    test al, al
+    jz found_end
+    inc ebx
+    jmp count_loop
     
+found_end:
+    ; 顯示字串
+    push 0
+    push OFFSET bytesWritten
+    push ebx
+    push esi
+    push hStdOutput
+    call WriteConsoleA
+    
+    pop esi
+    pop ebx
+    pop ebp
+    ret 4
+print_string@4 ENDP
+
+; ============================================
+; 顯示換行
+; ============================================
+PUBLIC print_newline@0
+print_newline@0 PROC
+    push OFFSET newline_str
+    call print_string@4
     ret
-    
-print_newline endp
+print_newline@0 ENDP
 
-; ═══════════════════════════════════════
-; 打印整數 (16位無符號)
-; 輸入: AX = 要打印的數字
-; ═══════════════════════════════════════
-public print_number
+; ============================================
+; 顯示字元
+; 輸入: AL = 字元
+; ============================================
+PUBLIC print_char@4
+print_char@4 PROC
+    push ebp
+    mov ebp, esp
+    sub esp, 4
+    
+    mov al, [ebp+8]
+    mov [ebp-4], al
+    
+    push 0
+    push OFFSET bytesWritten
+    push 1
+    lea eax, [ebp-4]
+    push eax
+    push hStdOutput
+    call WriteConsoleA
+    
+    mov esp, ebp
+    pop ebp
+    ret 4
+print_char@4 ENDP
 
-print_number proc far
+; ============================================
+; 顯示數字 (十進位)
+; 輸入: EAX = 數字
+; ============================================
+PUBLIC print_number@4
+print_number@4 PROC
+    push ebp
+    mov ebp, esp
+    sub esp, 12  ; 數字緩衝區
+    push ebx
+    push esi
+    push edi
     
-    push bx
-    push cx
-    push dx
+    mov eax, [ebp+8]
+    lea edi, [ebp-1]  ; 緩衝區結尾
+    mov BYTE PTR [edi], 0  ; null 終止
+    dec edi
     
-    mov temp_num, ax
-    mov bx, 10
-    mov cx, 0
+    ; 處理 0 的特殊情況
+    test eax, eax
+    jnz convert_loop
+    mov BYTE PTR [edi], '0'
+    jmp print_result
     
-    ; 將數字轉換為字符串
 convert_loop:
-    mov ax, temp_num
-    xor dx, dx
-    div bx
-    mov temp_num, ax
+    test eax, eax
+    jz print_result
     
+    xor edx, edx
+    mov ebx, 10
+    div ebx
     add dl, '0'
-    push dx
-    inc cx
+    mov [edi], dl
+    dec edi
+    jmp convert_loop
     
-    cmp ax, 0
-    jne convert_loop
+print_result:
+    inc edi
+    push edi
+    call print_string@4
     
-    ; 打印數字字符
-print_num_loop:
-    pop dx
-    mov ah, 02h
-    int 21h
-    loop print_num_loop
-    
-    pop dx
-    pop cx
-    pop bx
-    
-    ret
-    
-print_number endp
+    pop edi
+    pop esi
+    pop ebx
+    mov esp, ebp
+    pop ebp
+    ret 4
+print_number@4 ENDP
 
-; ═══════════════════════════════════════
-; 顯示遊戲標題
-; ═══════════════════════════════════════
-public display_title
+; ============================================
+; 設定文字顏色
+; 輸入: EAX = 顏色屬性
+; ============================================
+PUBLIC set_color@4
+set_color@4 PROC
+    push ebp
+    mov ebp, esp
+    
+    push [ebp+8]
+    push hStdOutput
+    call SetConsoleTextAttribute
+    
+    pop ebp
+    ret 4
+set_color@4 ENDP
 
-display_title proc far
+; ============================================
+; 顯示彩色字串
+; 輸入: [ESP+4] = 字串位址, [ESP+8] = 顏色
+; ============================================
+PUBLIC print_color_string@8
+print_color_string@8 PROC
+    push ebp
+    mov ebp, esp
     
-    lea dx, title_str
-    call print_string
-    call print_newline
+    ; 設定顏色
+    push [ebp+12]
+    call set_color@4
     
-    lea dx, title_str2
-    call print_string
-    call print_newline
+    ; 顯示字串
+    push [ebp+8]
+    call print_string@4
     
-    lea dx, title_str3
-    call print_string
-    call print_newline
+    ; 恢復預設顏色 (白色)
+    push COLOR_WHITE
+    call set_color@4
     
-    call print_newline
-    lea dx, press_any_key
-    call print_string
-    
-    ; 等待按鍵
-    mov ah, 00h
-    int 16h
-    
-    ret
-    
-display_title endp
+    pop ebp
+    ret 8
+print_color_string@8 ENDP
 
-; ═══════════════════════════════════════
-; 顯示關卡資訊
-; ═══════════════════════════════════════
-public display_level_info
-
-display_level_info proc far
-    
-    push ax
-    
-    call print_newline
-    lea dx, level_label
-    call print_string
-    call print_newline
-    call print_newline
-    
-    ; 顯示關卡數
-    lea dx, level_num_str
-    call print_string
-    
-    mov al, current_level
-    xor ah, ah
-    inc ax                          ; 顯示 1-10 而不是 0-9
-    call print_number
-    
-    call print_newline
-    call print_newline
-    
-    ; 顯示士兵數量
-    lea dx, soldiers_str
-    call print_string
-    
-    mov ax, soldier_count
-    call print_number
-    
-    call print_newline
-    call print_newline
-    
-    ; 顯示兩條路選項
-    lea dx, left_formula_str
-    call print_string
-    
-    ; 取得左邊公式資訊並顯示
-    ; 這部分會在 game_logic.asm 中更詳細實現
-    lea dx, multiply_str
-    call print_string
-    
-    call print_newline
-    call print_newline
-    
-    lea dx, right_formula_str
-    call print_string
-    
-    lea dx, multiply_str
-    call print_string
-    
-    call print_newline
-    call print_newline
-    
-    pop ax
-    
-    ret
-    
-display_level_info endp
-
-; ═══════════════════════════════════════
-; 顯示結果
-; ═══════════════════════════════════════
-public display_result
-
-display_result proc far
-    
-    call print_newline
-    lea dx, separator_line
-    call print_string
-    call print_newline
-    
-    lea dx, result_str
-    call print_string
-    
-    mov ax, soldier_count
-    call print_number
-    
-    call print_newline
-    call print_newline
-    
-    ret
-    
-display_result endp
-
-code ends
-
-end
+END

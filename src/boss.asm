@@ -1,173 +1,306 @@
 ; ============================================
 ; boss.asm
-; Boss 戰鬥模組 - 最終戰鬥邏輯
+; Boss 戰鬥模組 - Windows 32-bit
 ; ============================================
 
-.model small
+.386
+.model flat, stdcall
+option casemap:none
 
-include constants.asm
-include strings.asm
+; 外部程序
+EXTERN clear_screen@0:PROC
+EXTERN print_string@4:PROC
+EXTERN print_number@4:PROC
+EXTERN set_cursor@8:PROC
+EXTERN get_player_choice@0:PROC
+EXTERN game_delay@4:PROC
+EXTERN print_color_string@8:PROC
 
-data segment public
-    boss_health     dw BOSS_HEALTH
-    damage_dealt    dw 0
-    round_count     db 0
-data ends
+; 顏色常數
+COLOR_RED       equ 4
+COLOR_YELLOW    equ 6
+COLOR_WHITE     equ 7
+COLOR_GREEN     equ 2
 
-code segment public
+.data
+    ; Boss 狀態
+    boss_health     dd 100
+    boss_attack     dd 15
+    boss_defense    dd 10
+    boss_x          dd 40
+    boss_y          dd 5
+    
+    ; Boss 訊息
+    boss_appear     db "A WILD BOSS APPEARS!", 0
+    boss_name       db "DARK OVERLORD", 0
+    boss_health_txt db "Boss Health: ", 0
+    boss_attack_txt db "Boss attacks for ", 0
+    boss_defeat     db "BOSS DEFEATED! +500 Points!", 0
+    
+    ; 戰鬥選項
+    attack_option   db "1. Attack", 0
+    defend_option   db "2. Defend", 0
+    special_option  db "3. Special Move", 0
+    
+    ; Boss ASCII 圖
+    boss_art1       db "    /\_/\    ", 0
+    boss_art2       db "   ( o.o )   ", 0
+    boss_art3       db "    > ^ <    ", 0
 
-    extrn print_string:far
-    extrn print_number:far
-    extrn print_newline:far
-    extrn delay_routine:far
-    
-    assume cs:code, ds:data
+.code
 
-; ═══════════════════════════════════════
-; Boss 戰鬥主程序
-; ═══════════════════════════════════════
-public boss_battle
+; ============================================
+; 初始化 Boss
+; ============================================
+PUBLIC init_boss@0
+init_boss@0 PROC
+    mov boss_health, 100
+    mov boss_attack, 15
+    mov boss_defense, 10
+    mov boss_x, 40
+    mov boss_y, 5
+    ret
+init_boss@0 ENDP
 
-boss_battle proc far
+; ============================================
+; 處理 Boss 戰鬥
+; 返回: EAX = 1(勝利) or 0(失敗)
+; ============================================
+PUBLIC process_boss_battle@0
+process_boss_battle@0 PROC
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
     
-    push ax
-    push bx
-    push cx
+    ; 顯示 Boss 出現
+    call clear_screen@0
+    call show_boss_appear
     
-    ; 初始化 Boss 血量
-    mov boss_health, BOSS_HEALTH
-    mov round_count, 0
+battle_loop:
+    ; 檢查 Boss 血量
+    cmp boss_health, 0
+    jle boss_defeated
     
-    call print_newline
-    lea dx, boss_title
-    call print_string
-    call print_newline
-    call print_newline
+    ; 顯示戰鬥畫面
+    call draw_boss_battle
     
-    ; ─────────────────────────────────
-    ; Boss 戰鬥迴圈
-    ; ─────────────────────────────────
-boss_battle_loop:
+    ; 玩家回合
+    call player_turn
     
-    inc round_count
+    ; 檢查 Boss 血量
+    cmp boss_health, 0
+    jle boss_defeated
     
-    ; 顯示狀態
-    lea dx, boss_health_str
-    call print_string
-    mov ax, boss_health
-    call print_number
-    call print_newline
+    ; Boss 回合
+    call boss_turn
     
-    lea dx, your_soldiers_str
-    call print_string
-    mov ax, soldier_count
-    call print_number
-    call print_newline
+    ; 延遲
+    push 1000
+    call game_delay@4
     
-    call print_newline
-    
-    ; 計算傷害 (士兵數 = 傷害)
-    mov ax, soldier_count
-    mov damage_dealt, ax
-    
-    ; 對 Boss 造成傷害
-    lea dx, attacking_str
-    call print_string
-    call print_newline
-    
-    mov ax, boss_health
-    sub ax, damage_dealt
-    
-    ; 檢查是否為負數
-    cmp ax, 0
-    jge boss_still_alive
-    
-    ; Boss 被擊敗
-    mov boss_health, 0
-    jmp boss_defeated
-    
-boss_still_alive:
-    mov boss_health, ax
-    
-    ; Boss 反擊 (造成 10 點傷害)
-    mov ax, soldier_count
-    cmp ax, 10
-    jbe soldier_all_dead
-    
-    sub soldier_count, 10
-    
-    lea dx, separator_line
-    call print_string
-    call print_newline
-    
-    call delay_routine
-    jmp boss_battle_loop
-    
-soldier_all_dead:
-    mov soldier_count, 0
+    jmp battle_loop
     
 boss_defeated:
+    ; 顯示勝利訊息
+    call show_boss_defeat
+    mov eax, 1  ; 返回勝利
+    jmp battle_end
     
-    pop cx
-    pop bx
-    pop ax
+battle_end:
+    pop esi
+    pop ebx
+    pop ebp
+    ret
+process_boss_battle@0 ENDP
+
+; ============================================
+; 顯示 Boss 出現動畫
+; ============================================
+show_boss_appear PROC
+    ; 顯示警告訊息
+    push 30
+    push 10
+    call set_cursor@8
+    
+    push COLOR_RED
+    push OFFSET boss_appear
+    call print_color_string@8
+    
+    ; 顯示 Boss 名稱
+    push 33
+    push 12
+    call set_cursor@8
+    
+    push COLOR_YELLOW
+    push OFFSET boss_name
+    call print_color_string@8
+    
+    ; 延遲
+    push 2000
+    call game_delay@4
     
     ret
-    
-boss_battle endp
+show_boss_appear ENDP
 
-; ═══════════════════════════════════════
-; 顯示勝利訊息
-; ═══════════════════════════════════════
-public show_victory
-
-show_victory proc far
+; ============================================
+; 繪製 Boss 戰鬥畫面
+; ============================================
+draw_boss_battle PROC
+    call clear_screen@0
     
-    call print_newline
-    call print_newline
+    ; 繪製 Boss ASCII 藝術
+    push 35
+    push 5
+    call set_cursor@8
+    push OFFSET boss_art1
+    call print_string@4
     
-    lea dx, victory_str
-    call print_string
-    call print_newline
+    push 35
+    push 6
+    call set_cursor@8
+    push OFFSET boss_art2
+    call print_string@4
     
-    lea dx, victory_str2
-    call print_string
-    call print_newline
+    push 35
+    push 7
+    call set_cursor@8
+    push OFFSET boss_art3
+    call print_string@4
     
-    lea dx, victory_str3
-    call print_string
-    call print_newline
+    ; 顯示 Boss 血量
+    push 30
+    push 10
+    call set_cursor@8
+    push OFFSET boss_health_txt
+    call print_string@4
+    push boss_health
+    call print_number@4
+    
+    ; 顯示戰鬥選項
+    push 10
+    push 15
+    call set_cursor@8
+    push OFFSET attack_option
+    call print_string@4
+    
+    push 10
+    push 16
+    call set_cursor@8
+    push OFFSET defend_option
+    call print_string@4
+    
+    push 10
+    push 17
+    call set_cursor@8
+    push OFFSET special_option
+    call print_string@4
     
     ret
-    
-show_victory endp
+draw_boss_battle ENDP
 
-; ═══════════════════════════════════════
-; 顯示失敗訊息
-; ═══════════════════════════════════════
-public show_defeat
+; ============================================
+; 玩家回合
+; ============================================
+player_turn PROC
+    push ebx
+    
+    ; 取得玩家選擇
+    call get_player_choice@0
+    
+    ; 根據選擇執行動作
+    cmp eax, 0
+    je player_attack
+    jmp player_defend
+    
+player_attack:
+    ; 計算傷害
+    mov ebx, 20  ; 基礎傷害
+    sub ebx, boss_defense
+    cmp ebx, 0
+    jg apply_damage
+    mov ebx, 1  ; 最小傷害
+    
+apply_damage:
+    sub boss_health, ebx
+    cmp boss_health, 0
+    jge turn_done
+    mov boss_health, 0
+    jmp turn_done
+    
+player_defend:
+    ; 防禦動作
+    add boss_defense, 5
+    
+turn_done:
+    pop ebx
+    ret
+player_turn ENDP
 
-show_defeat proc far
+; ============================================
+; Boss 回合
+; ============================================
+boss_turn PROC
+    push ebx
     
-    call print_newline
-    call print_newline
+    ; Boss 攻擊訊息
+    push 30
+    push 20
+    call set_cursor@8
+    push OFFSET boss_attack_txt
+    call print_string@4
+    push boss_attack
+    call print_number@4
     
-    lea dx, defeat_str
-    call print_string
-    call print_newline
+    ; 延遲顯示
+    push 1000
+    call game_delay@4
     
-    lea dx, defeat_str2
-    call print_string
-    call print_newline
+    pop ebx
+    ret
+boss_turn ENDP
+
+; ============================================
+; 顯示 Boss 擊敗訊息
+; ============================================
+show_boss_defeat PROC
+    call clear_screen@0
     
-    lea dx, defeat_str3
-    call print_string
-    call print_newline
+    push 25
+    push 12
+    call set_cursor@8
+    
+    push COLOR_GREEN
+    push OFFSET boss_defeat
+    call print_color_string@8
+    
+    push 2000
+    call game_delay@4
     
     ret
+show_boss_defeat ENDP
+
+; ============================================
+; Boss AI 行為
+; ============================================
+PUBLIC boss_ai@0
+boss_ai@0 PROC
+    ; 簡單的 AI 邏輯
+    ; 可以根據血量改變行為
     
-show_defeat endp
+    cmp boss_health, 30
+    jl aggressive_mode
+    
+    ; 正常模式
+    mov boss_attack, 15
+    jmp ai_done
+    
+aggressive_mode:
+    ; 低血量時更具攻擊性
+    mov boss_attack, 25
+    
+ai_done:
+    ret
+boss_ai@0 ENDP
 
-code ends
-
-end
+END

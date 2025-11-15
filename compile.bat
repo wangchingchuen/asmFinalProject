@@ -1,168 +1,119 @@
 @echo off
-REM ===================================================
-REM x86 ASM Game Project Compile Script
-REM ===================================================
-
 setlocal enabledelayedexpansion
 
-REM 設定路徑
-set SRC_DIR=src
-set DATA_DIR=data
-set OBJ_DIR=obj
-set BIN_DIR=bin
-set OUTPUT=%BIN_DIR%\game.exe
+REM ============================================
+REM Automatically find latest VS MSVC tools path
+REM ============================================
 
-REM 使用正確的 MASM 路徑
-set ASSEMBLER="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\ml.exe"
+set "VS_BASE=%ProgramFiles(x86)%\Microsoft Visual Studio"
+set "VSTOOLS="
 
-REM 尋找 link.exe
-for /f "delims=" %%i in ('where link.exe 2^>nul') do (
-    set LINKER=%%i
-    goto found_linker
+REM Loop all VS installations
+for /d %%V in ("%VS_BASE%\*") do (
+    for /d %%E in ("%%V\*\VC\Tools\MSVC\*") do (
+        if exist "%%E\bin\Hostx86\x86" (
+            set "VSTOOLS_CANDIDATE=%%E\bin\Hostx86\x86"
+            REM Compare version strings to keep the latest one
+            if "!VSTOOLS!"=="" (
+                set "VSTOOLS=!VSTOOLS_CANDIDATE!"
+            ) else (
+                for /f "tokens=1-4 delims=." %%a in ("%%~nxE") do set "newver=%%a%%b%%c%%d"
+                for /f "tokens=1-4 delims=." %%a in ("!VSTOOLS:*-*=%") do set "curver=%%a%%b%%c%%d"
+                if !newver! gtr !curver! set "VSTOOLS=!VSTOOLS_CANDIDATE!"
+            )
+        )
+    )
 )
 
-REM 嘗試常見位置
-if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\link.exe" (
-    set LINKER="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\link.exe"
-    goto found_linker
-)
-
-set LINKER=link.exe
-
-:found_linker
-
-cls
-echo.
-echo ===================================================
-echo  x86 ASM Game Project - Compiler
-echo ===================================================
-echo.
-
-REM 檢查編譯器是否存在
-if not exist %ASSEMBLER% (
-    echo Error: ml.exe not found!
-    echo Path: %ASSEMBLER%
+if "%VSTOOLS%"=="" (
+    echo ERROR: Could not find VS Build Tools MSVC bin folder!
     pause
     exit /b 1
 )
 
-echo [OK] Assembler found
+echo Found VS Tools: %VSTOOLS%
+set PATH=%VSTOOLS%;%PATH%
+
+REM ============================================
+REM Set console to English
+REM ============================================
+chcp 437 > nul
+
+REM ============================================
+REM Windows SDK LIB PATH
+REM ============================================
+set LIBPATH_CRT=C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x86
+set LIBPATH_UCRT=C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x86
+
+echo Using LIBPATH:
+echo %LIBPATH_CRT%
+echo %LIBPATH_UCRT%
 echo.
 
-REM 建立必要的目錄
-if not exist %OBJ_DIR% (
-    mkdir %OBJ_DIR%
-    echo [OK] Created %OBJ_DIR% directory
+REM ============================================
+REM Clean previous build
+REM ============================================
+echo Cleaning previous build...
+if exist bin\*.exe del /Q bin\*.exe
+if exist obj\*.obj del /Q obj\*.obj
+if exist obj\*.lst del /Q obj\*.lst
+if exist obj\*.pdb del /Q obj\*.pdb
+if exist bin\*.pdb del /Q bin\*.pdb
+if exist bin\*.ilk del /Q bin\*.ilk
+
+if not exist bin mkdir bin
+if not exist obj mkdir obj
+
+REM ============================================
+REM Assemble source files
+REM ============================================
+echo.
+echo ============================================
+echo Assembling source files...
+echo ============================================
+
+REM Assemble your data files and src files
+ML /c /coff /Zi /Fo obj\constants.obj data\constants.asm
+ML /c /coff /Zi /Fo obj\levels.obj data\levels.asm
+ML /c /coff /Zi /Fo obj\strings.obj data\strings.asm
+ML /c /coff /Zi /Fo obj\main.obj src\main.asm
+ML /c /coff /Zi /Fo obj\display.obj src\display.asm
+ML /c /coff /Zi /Fo obj\input.obj src\input.asm
+ML /c /coff /Zi /Fo obj\game_logic.obj src\game_logic.asm
+ML /c /coff /Zi /Fo obj\boss.obj src\boss.asm
+ML /c /coff /Zi /Fo obj\delay.obj src\delay.asm
+ML /c /coff /Zi /Fo obj\math.obj src\math.asm
+
+REM ============================================
+REM Linking object files
+REM ============================================
+LINK /INCREMENTAL:no /debug /subsystem:console /entry:start /out:bin\game.exe obj\*.obj kernel32.lib user32.lib
+
+if errorlevel 1 (
+    echo ERROR: Failed to link object files
+    goto terminate
 )
 
-if not exist %BIN_DIR% (
-    mkdir %BIN_DIR%
-    echo [OK] Created %BIN_DIR% directory
-)
-
 echo.
-echo ===== Start Compiling =====
-echo.
+echo ============================================
+echo BUILD SUCCESSFUL!
+echo Executable: bin\game.exe
+echo ============================================
 
-REM 清理舊的 OBJ 檔案
-echo [Clean] Removing old object files...
-del /q %OBJ_DIR%\*.obj >nul 2>&1
-
-REM 編譯 SRC 目錄的檔案
-echo.
-echo [Compile] src directory...
-
-%ASSEMBLER% /Fo%OBJ_DIR%\main.obj %SRC_DIR%\main.asm
-if errorlevel 1 goto compile_error
-echo   [OK] main.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\input.obj %SRC_DIR%\input.asm
-if errorlevel 1 goto compile_error
-echo   [OK] input.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\game_logic.obj %SRC_DIR%\game_logic.asm
-if errorlevel 1 goto compile_error
-echo   [OK] game_logic.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\display.obj %SRC_DIR%\display.asm
-if errorlevel 1 goto compile_error
-echo   [OK] display.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\math.obj %SRC_DIR%\math.asm
-if errorlevel 1 goto compile_error
-echo   [OK] math.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\boss.obj %SRC_DIR%\boss.asm
-if errorlevel 1 goto compile_error
-echo   [OK] boss.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\delay.obj %SRC_DIR%\delay.asm
-if errorlevel 1 goto compile_error
-echo   [OK] delay.asm
-
-REM 編譯 DATA 目錄的檔案
-echo.
-echo [Compile] data directory...
-
-%ASSEMBLER% /Fo%OBJ_DIR%\levels.obj %DATA_DIR%\levels.asm
-if errorlevel 1 goto compile_error
-echo   [OK] levels.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\strings.obj %DATA_DIR%\strings.asm
-if errorlevel 1 goto compile_error
-echo   [OK] strings.asm
-
-%ASSEMBLER% /Fo%OBJ_DIR%\constants.obj %DATA_DIR%\constants.asm
-if errorlevel 1 goto compile_error
-echo   [OK] constants.asm
-
-REM 連接所有 OBJ 檔案
-echo.
-echo [Link] Generating executable...
-
-%LINKER% %OBJ_DIR%\main.obj %OBJ_DIR%\input.obj %OBJ_DIR%\game_logic.obj ^
-         %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj ^
-         %OBJ_DIR%\delay.obj %OBJ_DIR%\levels.obj %OBJ_DIR%\strings.obj %OBJ_DIR%\constants.obj ^
-         /OUT:%OUTPUT%
-
-if errorlevel 1 goto link_error
-
-echo.
-echo ===================================================
-echo  [SUCCESS] Compilation Complete!
-echo  Executable: %OUTPUT%
-echo ===================================================
-echo.
-
-REM 詢問是否執行遊戲
-set /p RUN="Run game now? (Y/N): "
-if /i "%RUN%"=="Y" (
-    %OUTPUT%
-) else (
-    echo.
-    pause
-)
+dir /b bin\*.exe
+dir /b obj\*.obj
 
 goto end
 
-REM 錯誤處理
-:compile_error
+:terminate
 echo.
-echo ===================================================
-echo  [ERROR] Compilation failed!
-echo ===================================================
-echo.
-pause
-exit /b 1
-
-:link_error
-echo.
-echo ===================================================
-echo  [ERROR] Linking failed!
-echo ===================================================
-echo.
+echo ============================================
+echo BUILD FAILED!
+echo Check error messages above
+echo ============================================
 pause
 exit /b 1
 
 :end
-endlocal
+pause
+exit /b 0

@@ -1,56 +1,95 @@
 ; ============================================
 ; strings.asm
-; 遊戲字符串和 UI 文本
+; 字串資料 - Windows 32-bit
 ; ============================================
 
-data segment public
+.386
+.model flat, stdcall
+option casemap:none
 
-    ; 標題和菜單
-    title_str           db "╔════════════════════════════════════════════════════════════╗$"
-    title_str2          db "║          SOLDIER BATTLE - x86 ASM GAME                     ║$"
-    title_str3          db "╚════════════════════════════════════════════════════════════╝$"
+.data
+    ; 遊戲標題
+    PUBLIC game_title_str
+    PUBLIC version_str
     
-    ; 遊戲畫面
-    level_label         db "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$"
-    level_num_str       db "Level: $"
-    soldiers_str        db "Soldiers: $"
+    game_title_str  db "ASSEMBLY ADVENTURE v1.0", 0
+    version_str     db "Windows 32-bit Edition", 0
     
-    ; 選擇提示
-    left_formula_str    db "LEFT (A):  $"
-    right_formula_str   db "RIGHT (D): $"
-    select_prompt       db "Choose your path (A/D): $"
+    ; 選單字串
+    PUBLIC menu_title
+    PUBLIC menu_start
+    PUBLIC menu_help
+    PUBLIC menu_quit
+    PUBLIC menu_select
     
-    ; 公式顯示
-    multiply_str        db "x $"
-    add_str             db "+ $"
+    menu_title      db "===== MAIN MENU =====", 0
+    menu_start      db "1. Start Game", 0
+    menu_help       db "2. Help", 0
+    menu_quit       db "3. Quit", 0
+    menu_select     db "Select option: ", 0
     
-    ; 選擇結果
-    you_chose_str       db "You chose: $"
-    left_str            db "LEFT PATH$"
-    right_str           db "RIGHT PATH$"
-    result_str          db "New soldier count: $"
+    ; 遊戲訊息
+    PUBLIC msg_welcome
+    PUBLIC msg_gameover
+    PUBLIC msg_win
+    PUBLIC msg_pause
+    PUBLIC msg_continue
     
-    ; Boss 戰鬥
-    boss_title          db "★★★ BOSS BATTLE ★★★$"
-    boss_health_str     db "Boss Health: $"
-    your_soldiers_str   db "Your Soldiers: $"
-    attacking_str       db "Attacking...$"
+    msg_welcome     db "Welcome to Assembly Adventure!", 0
+    msg_gameover    db "GAME OVER! Thanks for playing!", 0
+    msg_win         db "CONGRATULATIONS! You Won!", 0
+    msg_pause       db "Game Paused. Press any key to continue...", 0
+    msg_continue    db "Press ENTER to continue...", 0
     
-    ; 勝敗訊息
-    victory_str         db "╔════════════════════════════════════════════════════════════╗$"
-    victory_str2        db "║               🎉 VICTORY! YOU WIN! 🎉                      ║$"
-    victory_str3        db "╚════════════════════════════════════════════════════════════╝$"
+    ; 狀態訊息
+    PUBLIC msg_score
+    PUBLIC msg_lives
+    PUBLIC msg_level
+    PUBLIC msg_health
     
-    defeat_str          db "╔════════════════════════════════════════════════════════════╗$"
-    defeat_str2         db "║              💀 DEFEAT! GAME OVER! 💀                     ║$"
-    defeat_str3         db "╚════════════════════════════════════════════════════════════╝$"
+    msg_score       db "Score: ", 0
+    msg_lives       db "Lives: ", 0
+    msg_level       db "Level: ", 0
+    msg_health      db "Health: ", 0
     
-    ; 通用提示
-    press_any_key       db "Press any key to continue...$"
-    separator_line      db "────────────────────────────────────────────────────────────$"
-    empty_line          db " $"
-    newline             db 0Dh, 0Ah, "$"
+    ; 說明文字
+    PUBLIC help_title
+    PUBLIC help_controls
+    PUBLIC help_objective
+    PUBLIC help_arrows
+    PUBLIC help_space
+    PUBLIC help_esc
+    
+    help_title      db "===== GAME HELP =====", 0
+    help_controls   db "Controls:", 0
+    help_objective  db "Objective: Defeat all enemies and the boss!", 0
+    help_arrows     db "Arrow Keys - Move", 0
+    help_space      db "Space - Attack", 0
+    help_esc        db "ESC - Pause/Menu", 0
+    
+    ; 錯誤訊息
+    PUBLIC err_invalid
+    PUBLIC err_file
+    PUBLIC err_memory
+    
+    err_invalid     db "Invalid input! Please try again.", 0
+    err_file        db "Error: Cannot load file.", 0
+    err_memory      db "Error: Not enough memory.", 0
+    
+    ; 戰鬥訊息
+    PUBLIC battle_start
+    PUBLIC battle_attack
+    PUBLIC battle_defend
+    PUBLIC battle_special
+    PUBLIC battle_damage
+    PUBLIC battle_miss
+    
+    battle_start    db "Battle begins!", 0
+    battle_attack   db "You attack!", 0
+    battle_defend   db "You defend!", 0
+    battle_special  db "Special move!", 0
+    battle_damage   db " damage dealt!", 0
+    battle_miss     db "Attack missed!", 0
 
-data ends
-
-end
+.code
+END

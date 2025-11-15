@@ -1,175 +1,418 @@
 ; ============================================
 ; game_logic.asm
-; 遊戲邏輯 - 公式計算和士兵數量管理
+; 遊戲邏輯模組 - Windows 32-bit
 ; ============================================
 
-.model small
+.386
+.model flat, stdcall
+option casemap:none
 
-include constants.asm
-include strings.asm
-include levels.asm
+; Windows API
+Sleep PROTO :DWORD
+GetTickCount PROTO
 
-data segment public
-    formula_type    db 0
-    formula_param   db 0
-    level_offset    dw 0
-data ends
+; 外部程序
+EXTERN clear_screen@0:PROC
+EXTERN print_string@4:PROC
+EXTERN print_number@4:PROC
+EXTERN print_newline@0:PROC
+EXTERN set_cursor@8:PROC
+EXTERN get_player_choice@0:PROC
+EXTERN wait_for_key@0:PROC
+EXTERN get_arrow_key@0:PROC
+EXTERN process_boss_battle@0:PROC
+EXTERN game_delay@4:PROC
+EXTERN print_char@4:PROC
 
-code segment public
+.data
+    ; 遊戲狀態
+    PUBLIC game_state
+    PUBLIC player_score
+    PUBLIC player_lives
+    PUBLIC current_level
+    
+    game_state      dd 0  ; 0=選單, 1=遊戲中, 2=結束
+    player_score    dd 0
+    player_lives    dd 3
+    current_level   dd 1
+    player_x        dd 40  ; 玩家X位置 (螢幕中央)
+    player_y        dd 20  ; 玩家Y位置
+    
+    ; 遊戲訊息
+    game_title      db "=== ASSEMBLY ADVENTURE ===", 0
+    score_text      db "Score: ", 0
+    lives_text      db "Lives: ", 0
+    level_text      db "Level: ", 0
+    game_over_msg   db "GAME OVER!", 0
+    win_msg         db "YOU WIN!", 0
+    play_again_msg  db "Play again? (Y/N): ", 0
+    
+    ; 遊戲物件
+    enemy_count     dd 5
+    enemy_x         dd 10, 20, 30, 50, 60
+    enemy_y         dd 5, 8, 6, 7, 9
+    enemy_active    dd 1, 1, 1, 1, 1
 
-    extrn print_string:far
-    extrn print_number:far
-    extrn print_newline:far
-    
-    assume cs:code, ds:data
+.code
 
-; ═══════════════════════════════════════
-; 根據關卡和選擇取得公式資訊
-; 輸入: current_level, current_choice
-; 返回: formula_type (AL), formula_param (BL)
-; ═══════════════════════════════════════
-public get_formula
-
-get_formula proc far
+; ============================================
+; 初始化遊戲
+; ============================================
+PUBLIC init_game@0
+init_game@0 PROC
+    ; 重置遊戲狀態
+    mov game_state, 1      ; 遊戲中
+    mov player_score, 0
+    mov player_lives, 3
+    mov current_level, 1
+    mov player_x, 40
+    mov player_y, 20
     
-    push bx
-    push cx
-    
-    ; 計算偏移量: level_offset = current_level * 4
-    mov al, current_level
-    mov bl, 4
-    mul bl
-    mov level_offset, ax
-    
-    ; 取得 level_data 的地址
-    lea bx, level_data
-    add bx, level_offset
-    
-    ; 檢查選擇是左還是右
-    cmp current_choice, 0
-    je get_left_formula
-    
-    ; 右邊公式 (偏移 +2)
-    mov al, [bx + 2]                ; 公式類型
-    mov bl, [bx + 3]                ; 公式參數
-    jmp get_formula_done
-    
-get_left_formula:
-    ; 左邊公式 (偏移 +0)
-    mov al, [bx]                    ; 公式類型
-    mov bl, [bx + 1]                ; 公式參數
-    
-get_formula_done:
-    mov formula_type, al
-    mov formula_param, bl
-    
-    pop cx
-    pop bx
+    ; 重置敵人
+    mov ecx, 5
+    xor eax, eax
+reset_enemies:
+    mov enemy_active[eax*4], 1
+    inc eax
+    loop reset_enemies
     
     ret
-    
-get_formula endp
+init_game@0 ENDP
 
-; ═══════════════════════════════════════
-; 應用公式到士兵數量
-; ═══════════════════════════════════════
-public apply_formula
-
-apply_formula proc far
+; ============================================
+; 主遊戲迴圈
+; ============================================
+PUBLIC game_loop@0
+game_loop@0 PROC
+    push ebp
+    mov ebp, esp
     
-    push ax
-    push bx
-    push dx
+game_loop_start:
+    ; 檢查遊戲狀態
+    cmp game_state, 0
+    je game_end
+    cmp game_state, 2
+    je game_end
     
-    ; 取得公式
-    call get_formula
+    ; 清除螢幕並更新顯示
+    call clear_screen@0
+    call draw_game_screen
     
-    mov al, formula_type
-    mov bl, formula_param
+    ; 處理玩家輸入
+    call get_arrow_key@0
+    call process_player_input
     
-    ; 檢查公式類型
-    cmp al, FORMULA_MULTIPLY
-    je apply_multiply
+    ; 更新遊戲邏輯
+    call update_enemies
+    call check_collisions
     
-    cmp al, FORMULA_ADD
-    je apply_add
+    ; 檢查勝利條件
+    call check_win_condition
     
-    jmp apply_done
+    ; 延遲 (控制遊戲速度)
+    push 50  ; 50毫秒
+    call game_delay@4
     
-apply_multiply:
-    ; 士兵數量 *= 參數
-    mov ax, soldier_count
-    mov cl, bl
-    mul cl
+    jmp game_loop_start
     
-    ; 檢查溢出
-    cmp ax, MAX_SOLDIERS
-    jle apply_multiply_safe
-    mov ax, MAX_SOLDIERS
-    
-apply_multiply_safe:
-    mov soldier_count, ax
-    jmp apply_done
-    
-apply_add:
-    ; 士兵數量 += 參數
-    mov ax, soldier_count
-    xor bh, bh
-    add ax, bx
-    
-    ; 檢查溢出
-    cmp ax, MAX_SOLDIERS
-    jle apply_add_safe
-    mov ax, MAX_SOLDIERS
-    
-apply_add_safe:
-    mov soldier_count, ax
-    
-apply_done:
-    pop dx
-    pop bx
-    pop ax
-    
+game_end:
+    pop ebp
     ret
-    
-apply_formula endp
+game_loop@0 ENDP
 
-; ═══════════════════════════════════════
-; 顯示當前選擇的公式
-; ═══════════════════════════════════════
-public display_formula_choice
-
-display_formula_choice proc far
+; ============================================
+; 繪製遊戲畫面
+; ============================================
+draw_game_screen PROC
+    push ebx
+    push esi
     
-    push ax
-    push bx
+    ; 顯示標題
+    push 30
+    push 1
+    call set_cursor@8
+    push OFFSET game_title
+    call print_string@4
     
-    call get_formula
+    ; 顯示分數
+    push 5
+    push 3
+    call set_cursor@8
+    push OFFSET score_text
+    call print_string@4
+    push player_score
+    call print_number@4
     
-    ; 顯示公式類型和參數
-    cmp formula_type, FORMULA_MULTIPLY
-    je show_multiply
+    ; 顯示生命
+    push 20
+    push 3
+    call set_cursor@8
+    push OFFSET lives_text
+    call print_string@4
+    push player_lives
+    call print_number@4
     
-    lea dx, add_str
-    call print_string
-    jmp show_param
+    ; 顯示關卡
+    push 35
+    push 3
+    call set_cursor@8
+    push OFFSET level_text
+    call print_string@4
+    push current_level
+    call print_number@4
     
-show_multiply:
-    lea dx, multiply_str
-    call print_string
+    ; 繪製玩家 (使用 'P')
+    push player_x
+    push player_y
+    call set_cursor@8
+    push 'P'
+    call print_char@4
     
-show_param:
-    mov al, formula_param
-    xor ah, ah
-    call print_number
+    ; 繪製敵人 (使用 'E')
+    xor ebx, ebx
+draw_enemies:
+    cmp ebx, 5
+    jge done_drawing
     
-    pop bx
-    pop ax
+    cmp enemy_active[ebx*4], 0
+    je next_enemy
     
+    push enemy_x[ebx*4]
+    push enemy_y[ebx*4]
+    call set_cursor@8
+    push 'E'
+    call print_char@4
+    
+next_enemy:
+    inc ebx
+    jmp draw_enemies
+    
+done_drawing:
+    pop esi
+    pop ebx
     ret
+draw_game_screen ENDP
+
+; ============================================
+; 處理玩家輸入
+; 輸入: EAX = 方向鍵碼
+; ============================================
+process_player_input PROC
+    cmp eax, 0
+    je no_input
     
-display_formula_choice endp
+    cmp eax, 1  ; 左
+    je move_left
+    cmp eax, 2  ; 右
+    je move_right
+    cmp eax, 3  ; 上
+    je move_up
+    cmp eax, 4  ; 下
+    je move_down
+    jmp no_input
+    
+move_left:
+    cmp player_x, 1
+    jle no_input
+    dec player_x
+    jmp no_input
+    
+move_right:
+    cmp player_x, 78
+    jge no_input
+    inc player_x
+    jmp no_input
+    
+move_up:
+    cmp player_y, 5
+    jle no_input
+    dec player_y
+    jmp no_input
+    
+move_down:
+    cmp player_y, 23
+    jge no_input
+    inc player_y
+    
+no_input:
+    ret
+process_player_input ENDP
 
-code ends
+; ============================================
+; 更新敵人位置
+; ============================================
+update_enemies PROC
+    push ebx
+    push esi
+    
+    ; 簡單的敵人移動邏輯
+    call GetTickCount
+    and eax, 1  ; 隨機方向
+    
+    xor ebx, ebx
+update_loop:
+    cmp ebx, 5
+    jge update_done
+    
+    cmp enemy_active[ebx*4], 0
+    je next_update
+    
+    ; 簡單移動
+    test eax, 1
+    jz move_enemy_left
+    
+    inc enemy_x[ebx*4]
+    cmp enemy_x[ebx*4], 78
+    jl next_update
+    mov enemy_x[ebx*4], 10
+    jmp next_update
+    
+move_enemy_left:
+    dec enemy_x[ebx*4]
+    cmp enemy_x[ebx*4], 1
+    jg next_update
+    mov enemy_x[ebx*4], 70
+    
+next_update:
+    inc ebx
+    jmp update_loop
+    
+update_done:
+    pop esi
+    pop ebx
+    ret
+update_enemies ENDP
 
-end
+; ============================================
+; 檢查碰撞
+; ============================================
+check_collisions PROC
+    push ebx
+    
+    xor ebx, ebx
+collision_loop:
+    cmp ebx, 5
+    jge collision_done
+    
+    cmp enemy_active[ebx*4], 0
+    je next_collision
+    
+    ; 檢查玩家與敵人碰撞
+    mov eax, player_x
+    cmp eax, enemy_x[ebx*4]
+    jne next_collision
+    
+    mov eax, player_y
+    cmp eax, enemy_y[ebx*4]
+    jne next_collision
+    
+    ; 碰撞發生
+    mov enemy_active[ebx*4], 0
+    add player_score, 100
+    dec player_lives
+    
+    cmp player_lives, 0
+    jg next_collision
+    mov game_state, 2  ; 遊戲結束
+    
+next_collision:
+    inc ebx
+    jmp collision_loop
+    
+collision_done:
+    pop ebx
+    ret
+check_collisions ENDP
+
+; ============================================
+; 檢查勝利條件
+; ============================================
+check_win_condition PROC
+    push ebx
+    
+    ; 檢查是否所有敵人都被消滅
+    xor ebx, ebx
+    xor eax, eax
+check_enemies:
+    cmp ebx, 5
+    jge check_result
+    
+    add eax, enemy_active[ebx*4]
+    inc ebx
+    jmp check_enemies
+    
+check_result:
+    test eax, eax
+    jnz not_win
+    
+    ; 進入下一關
+    inc current_level
+    cmp current_level, 3
+    jg game_complete
+    
+    ; 重置敵人
+    mov ecx, 5
+    xor ebx, ebx
+reset_for_next:
+    mov enemy_active[ebx*4], 1
+    inc ebx
+    loop reset_for_next
+    jmp win_done
+    
+game_complete:
+    mov game_state, 2
+    
+not_win:
+win_done:
+    pop ebx
+    ret
+check_win_condition ENDP
+
+; ============================================
+; 顯示遊戲結束畫面
+; ============================================
+PUBLIC show_game_over@0
+show_game_over@0 PROC
+    call clear_screen@0
+    
+    ; 顯示遊戲結束訊息
+    push 35
+    push 12
+    call set_cursor@8
+    
+    cmp player_lives, 0
+    jg show_win
+    
+    push OFFSET game_over_msg
+    call print_string@4
+    jmp show_score
+    
+show_win:
+    push OFFSET win_msg
+    call print_string@4
+    
+show_score:
+    ; 顯示最終分數
+    push 30
+    push 14
+    call set_cursor@8
+    push OFFSET score_text
+    call print_string@4
+    push player_score
+    call print_number@4
+    
+    call wait_for_key@0
+    ret
+show_game_over@0 ENDP
+
+; ============================================
+; 更新顯示
+; ============================================
+PUBLIC update_display@0
+update_display@0 PROC
+    ; 這個函數可以用來局部更新顯示
+    ; 而不需要清除整個螢幕
+    ret
+update_display@0 ENDP
+
+END

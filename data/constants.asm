@@ -1,31 +1,69 @@
 ; ============================================
 ; constants.asm
-; 遊戲常數定義
+; 常數定義 - Windows 32-bit
 ; ============================================
 
-data segment public
+.386
+.model flat, stdcall
+option casemap:none
 
+.data
     ; 遊戲常數
-    INITIAL_SOLDIERS    equ 1       ; 初始士兵數
-    TOTAL_LEVELS        equ 10      ; 總關卡數
-    MAX_SOLDIERS        equ 65000   ; 最大士兵數
+    PUBLIC MAX_LIVES
+    PUBLIC MAX_LEVEL
+    PUBLIC SCREEN_WIDTH
+    PUBLIC SCREEN_HEIGHT
+    PUBLIC MAX_ENEMIES
+    PUBLIC INITIAL_SCORE
     
-    ; Boss 數據
-    BOSS_HEALTH         equ 100     ; Boss 血量
+    MAX_LIVES       dd 5
+    MAX_LEVEL       dd 10
+    SCREEN_WIDTH    dd 80
+    SCREEN_HEIGHT   dd 25
+    MAX_ENEMIES     dd 10
+    INITIAL_SCORE   dd 0
     
-    ; 公式類型
-    FORMULA_MULTIPLY    equ 1       ; 乘法
-    FORMULA_ADD         equ 2       ; 加法
+    ; 分數常數
+    PUBLIC ENEMY_POINTS
+    PUBLIC BOSS_POINTS
+    PUBLIC BONUS_POINTS
     
-    ; 螢幕常數
-    SCREEN_WIDTH        equ 80
-    SCREEN_HEIGHT       equ 25
+    ENEMY_POINTS    dd 10
+    BOSS_POINTS     dd 100
+    BONUS_POINTS    dd 50
     
-    ; 鍵盤代碼
-    KEY_LEFT            equ 61h     ; 'A' 鍵
-    KEY_RIGHT           equ 64h     ; 'D' 鍵
-    KEY_ESC             equ 1Bh     ; ESC 鍵
+    ; 時間常數 (毫秒)
+    PUBLIC FRAME_DELAY
+    PUBLIC INPUT_DELAY
+    PUBLIC ANIMATION_SPEED
+    
+    FRAME_DELAY     dd 33   ; ~30 FPS
+    INPUT_DELAY     dd 100
+    ANIMATION_SPEED dd 200
+    
+    ; 遊戲狀態常數
+    PUBLIC STATE_MENU
+    PUBLIC STATE_PLAYING
+    PUBLIC STATE_PAUSED
+    PUBLIC STATE_GAMEOVER
+    
+    STATE_MENU      dd 0
+    STATE_PLAYING   dd 1
+    STATE_PAUSED    dd 2
+    STATE_GAMEOVER  dd 3
+    
+    ; 方向常數
+    PUBLIC DIR_NONE
+    PUBLIC DIR_LEFT
+    PUBLIC DIR_RIGHT
+    PUBLIC DIR_UP
+    PUBLIC DIR_DOWN
+    
+    DIR_NONE        dd 0
+    DIR_LEFT        dd 1
+    DIR_RIGHT       dd 2
+    DIR_UP          dd 3
+    DIR_DOWN        dd 4
 
-data ends
-
-end
+.code
+END
