@@ -1,6 +1,7 @@
 @echo off
 REM ===================================================
 REM x86 ASM Game Project Compile Script
+REM 針對 emily 的電腦設定
 REM ===================================================
 
 setlocal enabledelayedexpansion
@@ -12,12 +13,9 @@ set OBJ_DIR=obj
 set BIN_DIR=bin
 set OUTPUT=%BIN_DIR%\game.exe
 
-REM 編譯器和連接器
-set ASSEMBLER=ml.exe
+REM 使用正確的 MASM 路徑
+set ASSEMBLER="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x86\ml.exe"
 set LINKER=link.exe
-
-REM 顏色代碼 (用於訊息)
-REM 藍色 = 訊息, 綠色 = 成功, 紅色 = 錯誤
 
 echo.
 echo ===================================================
@@ -26,20 +24,19 @@ echo ===================================================
 echo.
 
 REM 檢查編譯器是否存在
-%ASSEMBLER% >nul 2>&1
-if errorlevel 1 (
-    echo [錯誤] 找不到 ml.exe 編譯器！
-    echo 請確保已安裝 Microsoft Macro Assembler (MASM)
-    echo.
+if not exist %ASSEMBLER% (
+    echo [錯誤] 找不到 ml.exe！
+    echo 路徑: %ASSEMBLER%
     pause
     exit /b 1
 )
 
+echo [✓] 找到編譯器
+echo.
+
 %LINKER% >nul 2>&1
 if errorlevel 1 (
     echo [錯誤] 找不到 link.exe 連接器！
-    echo 請確保已安裝 Visual Studio 或 Microsoft Linker
-    echo.
     pause
     exit /b 1
 )
@@ -119,8 +116,8 @@ echo.
 echo [連接] 生成可執行檔...
 
 %LINKER% %OBJ_DIR%\main.obj %OBJ_DIR%\input.obj %OBJ_DIR%\game_logic.obj ^
-         %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj %OBJ_DIR%\delay.obj ^
-         %OBJ_DIR%\levels.obj %OBJ_DIR%\strings.obj %OBJ_DIR%\constants.obj ^
+         %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj ^
+         %OBJ_DIR%\delay.obj %OBJ_DIR%\levels.obj %OBJ_DIR%\strings.obj %OBJ_DIR%\constants.obj ^
          /OUT:%OUTPUT%
 
 if errorlevel 1 goto link_error
