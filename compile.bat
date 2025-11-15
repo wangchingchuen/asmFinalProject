@@ -94,6 +94,10 @@ echo   ✓ math.asm
 if errorlevel 1 goto compile_error
 echo   ✓ boss.asm
 
+%ASSEMBLER% /Fo%OBJ_DIR%\delay.obj %SRC_DIR%\delay.asm
+if errorlevel 1 goto compile_error
+echo   ✓ delay.asm
+
 REM 編譯 DATA 目錄的檔案
 echo.
 echo [編譯] data 目錄...
@@ -115,7 +119,7 @@ echo.
 echo [連接] 生成可執行檔...
 
 %LINKER% %OBJ_DIR%\main.obj %OBJ_DIR%\input.obj %OBJ_DIR%\game_logic.obj ^
-         %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj ^
+         %OBJ_DIR%\display.obj %OBJ_DIR%\math.obj %OBJ_DIR%\boss.obj %OBJ_DIR%\delay.obj ^
          %OBJ_DIR%\levels.obj %OBJ_DIR%\strings.obj %OBJ_DIR%\constants.obj ^
          /OUT:%OUTPUT%
 
