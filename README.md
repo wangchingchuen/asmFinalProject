@@ -20,7 +20,8 @@ project/
 ├── compile.bat     # 編譯腳本
 └── clean.bat       # 清理腳本
 ```
-#1117更新版（待定）
+1117更新版（待定）
+```
 src/
 │── main.asm            → 程式進入點 + 大流程控制
 │── menu.asm            → 開始遊戲 / 選關 / 難度選擇
@@ -36,6 +37,7 @@ src/
 │── fx.asm              → 動畫（箭數上升特效）
 │── sound.asm           → 聲音（加分用，簡單 beep）
 └── random.asm          → 隨機化效果（+1, +3, ×2 隨機）
+```
 
 ## 系統需求
 - Windows 作業系統 (32-bit 或 64-bit)
