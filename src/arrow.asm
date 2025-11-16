@@ -101,3 +101,114 @@ display_arrow_info@0 ENDP
 arrow_label db "Arrows: ", 0
 
 END
+; ============================================
+; 套用左右選項效果
+; 輸入：EAX = 0 (左) 或 1 (右)
+; 目的：更新 arrow_count
+; ============================================
+
+EXTERN add_numbers@8:PROC
+EXTERN sub_numbers@8:PROC
+EXTERN mul_numbers@8:PROC
+EXTERN div_numbers@8:PROC
+
+PUBLIC apply_effect@4
+apply_effect@4 PROC
+    push ebp
+    mov  ebp, esp
+    push ebx
+
+    ; 取得輸入：0 = 左，1 = 右
+    mov eax, [ebp+8]
+
+    cmp eax, 0
+    je apply_left
+    cmp eax, 1
+    je apply_right
+    jmp done        ; 非法輸入就忽略
+
+; ---------------------------
+; 套用左邊效果
+; ---------------------------
+apply_left:
+    mov eax, left_type
+    jmp do_effect
+
+; ---------------------------
+; 套用右邊效果
+; ---------------------------
+apply_right:
+    mov eax, right_type
+
+; ============================================
+; 根據效果類型來計算
+; eax = 效果類型
+; ============================================
+do_effect:
+    cmp eax, 0
+    je eff_add1
+    cmp eax, 1
+    je eff_sub1
+    cmp eax, 2
+    je eff_mul2
+    cmp eax, 3
+    je eff_div2
+    cmp eax, 4
+    je eff_add5
+    cmp eax, 5
+    je eff_sub3
+    jmp done
+
+; ------ (+1)
+eff_add1:
+    push 1
+    push arrow_count
+    call add_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+; ------ (-1)
+eff_sub1:
+    push 1
+    push arrow_count
+    call sub_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+; ------ (x2)
+eff_mul2:
+    push 2
+    push arrow_count
+    call mul_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+; ------ (/2)
+eff_div2:
+    push 2
+    push arrow_count
+    call div_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+; ------ (+5)
+eff_add5:
+    push 5
+    push arrow_count
+    call add_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+; ------ (-3)
+eff_sub3:
+    push 3
+    push arrow_count
+    call sub_numbers@8
+    mov arrow_count, eax
+    jmp done
+
+done:
+    pop ebx
+    pop ebp
+    ret 4
+apply_effect@4 ENDP
