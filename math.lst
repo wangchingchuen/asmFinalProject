@@ -1,0 +1,321 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/16/25 03:41:34
+src\math.asm						     Page 1 - 1
+
+
+				; ============================================
+				; math.asm
+				; 數學運算模組 - Windows 32-bit
+				; ============================================
+
+				.386
+				.model flat, stdcall
+				option casemap:none
+
+ 00000000			.data
+ 00000000 12345678		    seed    dd 12345678h  ; 隨機數種子
+
+ 00000000			.code
+
+				; ============================================
+				; 加法
+				; 輸入: EAX = 第一個數, EBX = 第二個數
+				; 返回: EAX = 結果
+				; ============================================
+				PUBLIC add_numbers@8
+ 00000000			add_numbers@8 PROC
+ 00000000  55			    push ebp
+ 00000001  8B EC		    mov ebp, esp
+				    
+ 00000003  8B 45 08		    mov eax, [ebp+8]
+ 00000006  03 45 0C		    add eax, [ebp+12]
+				    
+ 00000009  5D			    pop ebp
+ 0000000A  C2 0008		    ret 8
+ 0000000D			add_numbers@8 ENDP
+
+				; ============================================
+				; 減法
+				; 輸入: EAX = 被減數, EBX = 減數
+				; 返回: EAX = 結果
+				; ============================================
+				PUBLIC sub_numbers@8
+ 0000000D			sub_numbers@8 PROC
+ 0000000D  55			    push ebp
+ 0000000E  8B EC		    mov ebp, esp
+				    
+ 00000010  8B 45 08		    mov eax, [ebp+8]
+ 00000013  2B 45 0C		    sub eax, [ebp+12]
+				    
+ 00000016  5D			    pop ebp
+ 00000017  C2 0008		    ret 8
+ 0000001A			sub_numbers@8 ENDP
+
+				; ============================================
+				; 乘法
+				; 輸入: EAX = 第一個數, EBX = 第二個數
+				; 返回: EAX = 結果
+				; ============================================
+				PUBLIC mul_numbers@8
+ 0000001A			mul_numbers@8 PROC
+ 0000001A  55			    push ebp
+ 0000001B  8B EC		    mov ebp, esp
+ 0000001D  53			    push ebx
+				    
+ 0000001E  8B 45 08		    mov eax, [ebp+8]
+ 00000021  8B 5D 0C		    mov ebx, [ebp+12]
+ 00000024  F7 E3		    mul ebx
+				    
+ 00000026  5B			    pop ebx
+ 00000027  5D			    pop ebp
+ 00000028  C2 0008		    ret 8
+ 0000002B			mul_numbers@8 ENDP
+
+				; ============================================
+				; 除法
+				; 輸入: EAX = 被除數, EBX = 除數
+				; 返回: EAX = 商, EDX = 餘數
+				; ============================================
+				PUBLIC div_numbers@8
+ 0000002B			div_numbers@8 PROC
+ 0000002B  55			    push ebp
+ 0000002C  8B EC		    mov ebp, esp
+ 0000002E  53			    push ebx
+				    
+ 0000002F  8B 45 08		    mov eax, [ebp+8]
+ 00000032  33 D2		    xor edx, edx
+ 00000034  8B 5D 0C		    mov ebx, [ebp+12]
+				    
+				    ; 檢查除零
+ 00000037  85 DB		    test ebx, ebx
+ 00000039  74 04		    jz div_by_zero
+				    
+ 0000003B  F7 F3		    div ebx
+ 0000003D  EB 04		    jmp div_done
+				    
+ 0000003F			div_by_zero:
+ 0000003F  33 C0		    xor eax, eax
+ 00000041  33 D2		    xor edx, edx
+				    
+ 00000043			div_done:
+ 00000043  5B			    pop ebx
+ 00000044  5D			    pop ebp
+ 00000045  C2 0008		    ret 8
+ 00000048			div_numbers@8 ENDP
+
+				; ============================================
+				; 取模運算
+				; 輸入: EAX = 被除數, EBX = 除數
+				; 返回: EAX = 餘數
+				; ============================================
+				PUBLIC mod_numbers@8
+ 00000048			mod_numbers@8 PROC
+ 00000048  55			    push ebp
+ 00000049  8B EC		    mov ebp, esp
+ 0000004B  53			    push ebx
+				    
+ 0000004C  8B 45 08		    mov eax, [ebp+8]
+ 0000004F  33 D2		    xor edx, edx
+ 00000051  8B 5D 0C		    mov ebx, [ebp+12]
+				    
+ 00000054  85 DB		    test ebx, ebx
+ 00000056  74 06		    jz mod_zero
+				    
+ 00000058  F7 F3		    div ebx
+ 0000005A  8B C2		    mov eax, edx  ; 返回餘數
+ 0000005C  EB 02		    jmp mod_done
+				    
+ 0000005E			mod_zero:
+ 0000005E  33 C0		    xor eax, eax
+				    
+ 00000060			mod_done:
+ 00000060  5B			    pop ebx
+ 00000061  5D			    pop ebp
+ 00000062  C2 0008		    ret 8
+ 00000065			mod_numbers@8 ENDP
+
+				; ============================================
+				; 生成隨機數
+				; 輸入: EAX = 最大值
+				; 返回: EAX = 0 到 最大值-1 的隨機數
+				; ============================================
+				PUBLIC random@4
+ 00000065			random@4 PROC
+ 00000065  55			    push ebp
+ 00000066  8B EC		    mov ebp, esp
+ 00000068  53			    push ebx
+ 00000069  52			    push edx
+				    
+				    ; 線性同餘生成器 (LCG)
+				    ; seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
+				    
+ 0000006A  A1 00000000 R	    mov eax, seed
+ 0000006F  BB 41C64E6D		    mov ebx, 1103515245
+ 00000074  F7 E3		    mul ebx
+ 00000076  05 00003039		    add eax, 12345
+ 0000007B  25 7FFFFFFF		    and eax, 7FFFFFFFh
+ 00000080  A3 00000000 R	    mov seed, eax
+				    
+				    ; 取模得到範圍內的值
+ 00000085  33 D2		    xor edx, edx
+ 00000087  F7 75 08		    div DWORD PTR [ebp+8]
+ 0000008A  8B C2		    mov eax, edx
+				    
+ 0000008C  5A			    pop edx
+ 0000008D  5B			    pop ebx
+ 0000008E  5D			    pop ebp
+ 0000008F  C2 0004		    ret 4
+ 00000092			random@4 ENDP
+
+				; ============================================
+				; 設定隨機數種子
+				; 輸入: EAX = 新種子
+				; ============================================
+				PUBLIC set_seed@4
+ 00000092			set_seed@4 PROC
+ 00000092  55			    push ebp
+ 00000093  8B EC		    mov ebp, esp
+				    
+ 00000095  8B 45 08		    mov eax, [ebp+8]
+ 00000098  A3 00000000 R	    mov seed, eax
+				    
+ 0000009D  5D			    pop ebp
+ 0000009E  C2 0004		    ret 4
+ 000000A1			set_seed@4 ENDP
+
+				; ============================================
+				; 計算絕對值
+				; 輸入: EAX = 數值
+				; 返回: EAX = 絕對值
+				; ============================================
+				PUBLIC abs_value@4
+ 000000A1			abs_value@4 PROC
+ 000000A1  55			    push ebp
+ 000000A2  8B EC		    mov ebp, esp
+				    
+ 000000A4  8B 45 08		    mov eax, [ebp+8]
+ 000000A7  85 C0		    test eax, eax
+ 000000A9  79 02		    jns abs_done
+ 000000AB  F7 D8		    neg eax
+				    
+ 000000AD			abs_done:
+ 000000AD  5D			    pop ebp
+ 000000AE  C2 0004		    ret 4
+ 000000B1			abs_value@4 ENDP
+
+				; ============================================
+				; 取最大值
+				; 輸入: EAX = 第一個數, EBX = 第二個數
+				; 返回: EAX = 較大的數
+				; ============================================
+				PUBLIC max_value@8
+ 000000B1			max_value@8 PROC
+ 000000B1  55			    push ebp
+ 000000B2  8B EC		    mov ebp, esp
+				    
+ 000000B4  8B 45 08		    mov eax, [ebp+8]
+ 000000B7  3B 45 0C		    cmp eax, [ebp+12]
+ 000000BA  7D 03		    jge max_done
+ 000000BC  8B 45 0C		    mov eax, [ebp+12]
+				    
+ 000000BF			max_done:
+ 000000BF  5D			    pop ebp
+ 000000C0  C2 0008		    ret 8
+ 000000C3			max_value@8 ENDP
+
+				; ============================================
+				; 取最小值
+				; 輸入: EAX = 第一個數, EBX = 第二個數
+				; 返回: EAX = 較小的數
+				; ============================================
+				PUBLIC min_value@8
+ 000000C3			min_value@8 PROC
+ 000000C3  55			    push ebp
+ 000000C4  8B EC		    mov ebp, esp
+				    
+ 000000C6  8B 45 08		    mov eax, [ebp+8]
+ 000000C9  3B 45 0C		    cmp eax, [ebp+12]
+ 000000CC  7E 03		    jle min_done
+ 000000CE  8B 45 0C		    mov eax, [ebp+12]
+				    
+ 000000D1			min_done:
+ 000000D1  5D			    pop ebp
+ 000000D2  C2 0008		    ret 8
+ 000000D5			min_value@8 ENDP
+
+				; ============================================
+				; 計算平方
+				; 輸入: EAX = 數值
+				; 返回: EAX = 平方值
+				; ============================================
+				PUBLIC square@4
+ 000000D5			square@4 PROC
+ 000000D5  55			    push ebp
+ 000000D6  8B EC		    mov ebp, esp
+ 000000D8  53			    push ebx
+				    
+ 000000D9  8B 45 08		    mov eax, [ebp+8]
+ 000000DC  8B D8		    mov ebx, eax
+ 000000DE  F7 E3		    mul ebx
+				    
+ 000000E0  5B			    pop ebx
+ 000000E1  5D			    pop ebp
+ 000000E2  C2 0004		    ret 4
+ 000000E5			square@4 ENDP
+
+				END
+Microsoft (R) Macro Assembler Version 6.11		    11/16/25 03:41:34
+src\math.asm						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000004 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000000E5 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+abs_value@4  . . . . . . . . . .	P Near	 000000A1 _TEXT	Length= 00000010 Public STDCALL
+  abs_done . . . . . . . . . . .	L Near	 000000AD _TEXT	
+add_numbers@8  . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000000D Public STDCALL
+div_numbers@8  . . . . . . . . .	P Near	 0000002B _TEXT	Length= 0000001D Public STDCALL
+  div_by_zero  . . . . . . . . .	L Near	 0000003F _TEXT	
+  div_done . . . . . . . . . . .	L Near	 00000043 _TEXT	
+max_value@8  . . . . . . . . . .	P Near	 000000B1 _TEXT	Length= 00000012 Public STDCALL
+  max_done . . . . . . . . . . .	L Near	 000000BF _TEXT	
+min_value@8  . . . . . . . . . .	P Near	 000000C3 _TEXT	Length= 00000012 Public STDCALL
+  min_done . . . . . . . . . . .	L Near	 000000D1 _TEXT	
+mod_numbers@8  . . . . . . . . .	P Near	 00000048 _TEXT	Length= 0000001D Public STDCALL
+  mod_zero . . . . . . . . . . .	L Near	 0000005E _TEXT	
+  mod_done . . . . . . . . . . .	L Near	 00000060 _TEXT	
+mul_numbers@8  . . . . . . . . .	P Near	 0000001A _TEXT	Length= 00000011 Public STDCALL
+random@4 . . . . . . . . . . . .	P Near	 00000065 _TEXT	Length= 0000002D Public STDCALL
+set_seed@4 . . . . . . . . . . .	P Near	 00000092 _TEXT	Length= 0000000F Public STDCALL
+square@4 . . . . . . . . . . . .	P Near	 000000D5 _TEXT	Length= 00000010 Public STDCALL
+sub_numbers@8  . . . . . . . . .	P Near	 0000000D _TEXT	Length= 0000000D Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+seed . . . . . . . . . . . . . .	DWord	 00000000 _DATA	
+
+	   0 Warnings
+	   0 Errors

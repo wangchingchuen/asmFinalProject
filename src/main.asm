@@ -31,7 +31,8 @@ EXTERN clear_screen@0:PROC
     msg_len     dd $ - welcome_msg
 
 .code
-start:
+public _start
+_start PROC
     ; 初始化顯示系統
     call init_display@0
     
@@ -82,4 +83,5 @@ show_welcome PROC
     ret
 show_welcome ENDP
 
-END start
+_start ENDP
+END _start
