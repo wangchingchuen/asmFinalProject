@@ -20,6 +20,24 @@ project/
 ├── compile.bat     # 編譯腳本
 └── clean.bat       # 清理腳本
 ```
+1117更新版（待定）
+```
+src/
+│── main.asm            → 程式進入點 + 大流程控制
+│── menu.asm            → 開始遊戲 / 選關 / 難度選擇
+│── display.asm         → 顯示 + 顏色 + 字型
+│── input.asm           → 輸入 A/D/Enter
+│── delay.asm           → 時間控制
+│── math.asm            → 所有效果運算
+│── arrows.asm          → 箭數系統（已做好一半）
+│── round.asm           → 回合系統（10 回合）
+│── boss.asm            → Boss 對決
+│── levels.asm          → 多關配置（每關不同 +1 / ×2）
+│── ui.asm              → 視覺元素（框線 / 進度條）
+│── fx.asm              → 動畫（箭數上升特效）
+│── sound.asm           → 聲音（加分用，簡單 beep）
+└── random.asm          → 隨機化效果（+1, +3, ×2 隨機）
+```
 
 ## 系統需求
 - Windows 作業系統 (32-bit 或 64-bit)
