@@ -16,6 +16,13 @@ Sleep PROTO :DWORD
 ; 常數定義
 STD_OUTPUT_HANDLE equ -11
 
+; ============================================
+; 引入資料檔案
+; ============================================
+include .\data\constants.asm
+include .\data\strings.asm
+include .\data\levels.asm
+
 ; 外部程序宣告
 EXTERN init_game@0:PROC
 EXTERN game_loop@0:PROC
@@ -32,7 +39,8 @@ EXTERN clear_screen@0:PROC
 
 .code
 public _start
-_start PROC
+
+start PROC
     ; 初始化顯示系統
     call init_display@0
     
@@ -51,6 +59,7 @@ _start PROC
     ; 結束程式
     push 0
     call ExitProcess
+start ENDP
 
 ; ============================================
 ; 顯示歡迎訊息
@@ -83,5 +92,4 @@ show_welcome PROC
     ret
 show_welcome ENDP
 
-_start ENDP
 END _start

@@ -13,6 +13,7 @@ EXTERN apply_effect@4:PROC
 EXTERN clear_screen@0:PROC
 EXTERN print_string@4:PROC
 EXTERN set_cursor@8:PROC
+EXTERN print_number@4:PROC
 
 .data
     round_msg db "Round: ", 0

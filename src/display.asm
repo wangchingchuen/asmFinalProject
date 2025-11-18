@@ -7,13 +7,18 @@
 .model flat, stdcall
 option casemap:none
 
-; Windows API
+; ===== 引入函式庫 =====
+includelib kernel32.lib
+includelib user32.lib
+
+; ===== Windows API 宣告 =====
 GetStdHandle PROTO :DWORD
-WriteConsoleA PROTO :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
-SetConsoleCursorPosition PROTO :DWORD, :DWORD
-GetConsoleScreenBufferInfo PROTO :DWORD, :DWORD
-FillConsoleOutputCharacterA PROTO :DWORD, :DWORD, :DWORD, :DWORD, :DWORD
-SetConsoleTextAttribute PROTO :DWORD, :DWORD
+WriteConsoleA PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SetConsoleCursorPosition PROTO :DWORD,:DWORD
+GetConsoleScreenBufferInfo PROTO :DWORD,:DWORD
+FillConsoleOutputCharacterA PROTO :DWORD,:DWORD,:DWORD,:DWORD,:DWORD
+SetConsoleTextAttribute PROTO :DWORD,:DWORD
+
 
 ; 常數定義
 STD_OUTPUT_HANDLE equ -11

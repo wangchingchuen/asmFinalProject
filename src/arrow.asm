@@ -212,3 +212,5 @@ done:
     pop ebp
     ret 4
 apply_effect@4 ENDP
+
+END

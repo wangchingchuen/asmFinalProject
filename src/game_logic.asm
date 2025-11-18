@@ -7,6 +7,9 @@
 .model flat, stdcall
 option casemap:none
 
+; ===== 引入函式庫 =====
+includelib kernel32.lib
+
 ; Windows API
 Sleep PROTO :DWORD
 GetTickCount PROTO
@@ -23,8 +26,12 @@ EXTERN get_arrow_key@0:PROC
 EXTERN process_boss_battle@0:PROC
 EXTERN game_delay@4:PROC
 EXTERN print_char@4:PROC
+EXTERN init_arrows@12:PROC 
 
 .data
+    total_rounds dd 10
+    boss_hp     dd 25
+
     ; 遊戲狀態
     PUBLIC game_state
     PUBLIC player_score
@@ -75,6 +82,12 @@ reset_enemies:
     mov enemy_active[eax*4], 1
     inc eax
     loop reset_enemies
+
+    ; 初始化箭數
+    push 5      ; 初始箭數
+    push 1      ; 右邊效果 = -1
+    push 0      ; 左邊效果 = +1
+    call init_arrows@12
     
     ret
 init_game@0 ENDP
