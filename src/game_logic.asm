@@ -4,8 +4,10 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
+
+
 
 ; ===== 引入函式庫 =====
 includelib kernel32.lib
@@ -15,18 +17,18 @@ Sleep PROTO :DWORD
 GetTickCount PROTO
 
 ; 外部程序
-EXTERN clear_screen@0:PROC
-EXTERN print_string@4:PROC
-EXTERN print_number@4:PROC
-EXTERN print_newline@0:PROC
-EXTERN set_cursor@8:PROC
-EXTERN get_player_choice@0:PROC
-EXTERN wait_for_key@0:PROC
-EXTERN get_arrow_key@0:PROC
-EXTERN process_boss_battle@0:PROC
-EXTERN game_delay@4:PROC
-EXTERN print_char@4:PROC
-EXTERN init_arrows@12:PROC 
+EXTERN clear_screen:PROC
+EXTERN print_string:PROC
+EXTERN print_number:PROC
+EXTERN print_newline:PROC
+EXTERN set_cursor:PROC
+EXTERN get_player_choice:PROC
+EXTERN wait_for_key:PROC
+EXTERN get_arrow_key:PROC
+EXTERN process_boss_battle:PROC
+EXTERN game_delay:PROC
+EXTERN print_char:PROC
+EXTERN init_arrows:PROC 
 
 .data
     total_rounds dd 10
@@ -65,8 +67,8 @@ EXTERN init_arrows@12:PROC
 ; ============================================
 ; 初始化遊戲
 ; ============================================
-PUBLIC init_game@0
-init_game@0 PROC
+PUBLIC init_game
+init_game PROC
     ; 重置遊戲狀態
     mov game_state, 1      ; 遊戲中
     mov player_score, 0
@@ -87,16 +89,16 @@ reset_enemies:
     push 5      ; 初始箭數
     push 1      ; 右邊效果 = -1
     push 0      ; 左邊效果 = +1
-    call init_arrows@12
+    call init_arrows
     
     ret
-init_game@0 ENDP
+init_game ENDP
 
 ; ============================================
 ; 主遊戲迴圈
 ; ============================================
-PUBLIC game_loop@0
-game_loop@0 PROC
+PUBLIC game_loop
+game_loop PROC
     push ebp
     mov ebp, esp
     
@@ -108,11 +110,11 @@ game_loop_start:
     je game_end
     
     ; 清除螢幕並更新顯示
-    call clear_screen@0
+    call clear_screen
     call draw_game_screen
     
     ; 處理玩家輸入
-    call get_arrow_key@0
+    call get_arrow_key
     call process_player_input
     
     ; 更新遊戲邏輯
@@ -124,14 +126,14 @@ game_loop_start:
     
     ; 延遲 (控制遊戲速度)
     push 50  ; 50毫秒
-    call game_delay@4
+    call game_delay
     
     jmp game_loop_start
     
 game_end:
     pop ebp
     ret
-game_loop@0 ENDP
+game_loop ENDP
 
 ; ============================================
 ; 繪製遊戲畫面
@@ -143,43 +145,43 @@ draw_game_screen PROC
     ; 顯示標題
     push 30
     push 1
-    call set_cursor@8
+    call set_cursor
     push OFFSET game_title
-    call print_string@4
+    call print_string
     
     ; 顯示分數
     push 5
     push 3
-    call set_cursor@8
+    call set_cursor
     push OFFSET score_text
-    call print_string@4
+    call print_string
     push player_score
-    call print_number@4
+    call print_number
     
     ; 顯示生命
     push 20
     push 3
-    call set_cursor@8
+    call set_cursor
     push OFFSET lives_text
-    call print_string@4
+    call print_string
     push player_lives
-    call print_number@4
+    call print_number
     
     ; 顯示關卡
     push 35
     push 3
-    call set_cursor@8
+    call set_cursor
     push OFFSET level_text
-    call print_string@4
+    call print_string
     push current_level
-    call print_number@4
+    call print_number
     
     ; 繪製玩家 (使用 'P')
     push player_x
     push player_y
-    call set_cursor@8
+    call set_cursor
     push 'P'
-    call print_char@4
+    call print_char
     
     ; 繪製敵人 (使用 'E')
     xor ebx, ebx
@@ -192,9 +194,9 @@ draw_enemies:
     
     push enemy_x[ebx*4]
     push enemy_y[ebx*4]
-    call set_cursor@8
+    call set_cursor
     push 'E'
-    call print_char@4
+    call print_char
     
 next_enemy:
     inc ebx
@@ -384,48 +386,48 @@ check_win_condition ENDP
 ; ============================================
 ; 顯示遊戲結束畫面
 ; ============================================
-PUBLIC show_game_over@0
-show_game_over@0 PROC
-    call clear_screen@0
+PUBLIC show_game_over
+show_game_over PROC
+    call clear_screen
     
     ; 顯示遊戲結束訊息
     push 35
     push 12
-    call set_cursor@8
+    call set_cursor
     
     cmp player_lives, 0
     jg show_win
     
     push OFFSET game_over_msg
-    call print_string@4
+    call print_string
     jmp show_score
     
 show_win:
     push OFFSET win_msg
-    call print_string@4
+    call print_string
     
 show_score:
     ; 顯示最終分數
     push 30
     push 14
-    call set_cursor@8
+    call set_cursor
     push OFFSET score_text
-    call print_string@4
+    call print_string
     push player_score
-    call print_number@4
+    call print_number
     
-    call wait_for_key@0
+    call wait_for_key
     ret
-show_game_over@0 ENDP
+show_game_over ENDP
 
 ; ============================================
 ; 更新顯示
 ; ============================================
-PUBLIC update_display@0
-update_display@0 PROC
+PUBLIC update_display
+update_display PROC
     ; 這個函數可以用來局部更新顯示
     ; 而不需要清除整個螢幕
     ret
-update_display@0 ENDP
+update_display ENDP
 
 END

@@ -4,12 +4,14 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
 
-EXTERN print_string@4:PROC
-EXTERN print_number@4:PROC
-EXTERN set_cursor@8:PROC
+
+
+EXTERN print_string:PROC
+EXTERN print_number:PROC
+EXTERN set_cursor:PROC
 
 .data
     ; 玩家箭數
@@ -43,8 +45,8 @@ EXTERN set_cursor@8:PROC
 ; 初始化箭數與左右效果
 ; 輸入：EAX = 左效果類型, EBX = 右效果類型, ECX = 初始箭數
 ; ============================================
-PUBLIC init_arrows@12
-init_arrows@12 PROC
+PUBLIC init_arrows
+init_arrows PROC
     push ebp
     mov ebp, esp
 
@@ -59,43 +61,43 @@ init_arrows@12 PROC
 
     pop ebp
     ret 12
-init_arrows@12 ENDP
+init_arrows ENDP
 
 ; ============================================
 ; 顯示箭數 & 左右選項
 ; ============================================
-PUBLIC display_arrow_info@0
-display_arrow_info@0 PROC
+PUBLIC display_arrow_info
+display_arrow_info PROC
 
     ; 顯示：Arrows: X
     push 5        ; X 座標
     push 3        ; Y 座標
-    call set_cursor@8
+    call set_cursor
     push OFFSET arrow_label
-    call print_string@4
+    call print_string
     push dword ptr arrow_count
-    call print_number@4
+    call print_number
 
     ; 顯示左選項
     push 10
     push 6
-    call set_cursor@8
+    call set_cursor
     mov eax, left_type
     shl eax, 2
     push effect_texts[eax]
-    call print_string@4
+    call print_string
 
     ; 顯示右選項
     push 30
     push 6
-    call set_cursor@8
+    call set_cursor
     mov eax, right_type
     shl eax, 2
     push effect_texts[eax]
-    call print_string@4
+    call print_string
 
     ret
-display_arrow_info@0 ENDP
+display_arrow_info ENDP
 
 ; 顯示標籤文字
 arrow_label db "Arrows: ", 0
@@ -106,13 +108,13 @@ arrow_label db "Arrows: ", 0
 ; 目的：更新 arrow_count
 ; ============================================
 
-EXTERN add_numbers@8:PROC
-EXTERN sub_numbers@8:PROC
-EXTERN mul_numbers@8:PROC
-EXTERN div_numbers@8:PROC
+EXTERN add_numbers:PROC
+EXTERN sub_numbers:PROC
+EXTERN mul_numbers:PROC
+EXTERN div_numbers:PROC
 
-PUBLIC apply_effect@4
-apply_effect@4 PROC
+PUBLIC apply_effect
+apply_effect PROC
     push ebp
     mov  ebp, esp
     push ebx
@@ -162,7 +164,7 @@ do_effect:
 eff_add1_lbl:
     push 1
     push dword ptr arrow_count
-    call add_numbers@8
+    call add_numbers
     mov arrow_count, eax
     jmp done
 
@@ -170,7 +172,7 @@ eff_add1_lbl:
 eff_sub1_lbl:
     push 1
     push dword ptr arrow_count
-    call sub_numbers@8
+    call sub_numbers
     mov arrow_count, eax
     jmp done
 
@@ -178,7 +180,7 @@ eff_sub1_lbl:
 eff_mul2_lbl:
     push 2
     push dword ptr arrow_count
-    call mul_numbers@8
+    call mul_numbers
     mov arrow_count, eax
     jmp done
 
@@ -186,7 +188,7 @@ eff_mul2_lbl:
 eff_div2_lbl:
     push 2
     push dword ptr arrow_count
-    call div_numbers@8
+    call div_numbers
     mov arrow_count, eax
     jmp done
 
@@ -194,7 +196,7 @@ eff_div2_lbl:
 eff_add5_lbl:
     push 5
     push dword ptr arrow_count
-    call add_numbers@8
+    call add_numbers
     mov arrow_count, eax
     jmp done
 
@@ -202,7 +204,7 @@ eff_add5_lbl:
 eff_sub3_lbl:
     push 3
     push dword ptr arrow_count
-    call sub_numbers@8
+    call sub_numbers
     mov arrow_count, eax
     jmp done
 
@@ -210,6 +212,6 @@ done:
     pop ebx
     pop ebp
     ret 4
-apply_effect@4 ENDP
+apply_effect ENDP
 
 END

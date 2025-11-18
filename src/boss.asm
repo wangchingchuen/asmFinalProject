@@ -4,17 +4,19 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
 
+
+
 ; 外部程序
-EXTERN clear_screen@0:PROC
-EXTERN print_string@4:PROC
-EXTERN print_number@4:PROC
-EXTERN set_cursor@8:PROC
-EXTERN get_player_choice@0:PROC
-EXTERN game_delay@4:PROC
-EXTERN print_color_string@8:PROC
+EXTERN clear_screen:PROC
+EXTERN print_string:PROC
+EXTERN print_number:PROC
+EXTERN set_cursor:PROC
+EXTERN get_player_choice:PROC
+EXTERN game_delay:PROC
+EXTERN print_color_string:PROC
 
 ; 顏色常數
 COLOR_RED       equ 4
@@ -52,29 +54,29 @@ COLOR_GREEN     equ 2
 ; ============================================
 ; 初始化 Boss
 ; ============================================
-PUBLIC init_boss@0
-init_boss@0 PROC
+PUBLIC init_boss
+init_boss PROC
     mov boss_health, 100
     mov boss_attack, 15
     mov boss_defense, 10
     mov boss_x, 40
     mov boss_y, 5
     ret
-init_boss@0 ENDP
+init_boss ENDP
 
 ; ============================================
 ; 處理 Boss 戰鬥
 ; 返回: EAX = 1(勝利) or 0(失敗)
 ; ============================================
-PUBLIC process_boss_battle@0
-process_boss_battle@0 PROC
+PUBLIC process_boss_battle
+process_boss_battle PROC
     push ebp
     mov ebp, esp
     push ebx
     push esi
     
     ; 顯示 Boss 出現
-    call clear_screen@0
+    call clear_screen
     call show_boss_appear
     
 battle_loop:
@@ -97,7 +99,7 @@ battle_loop:
     
     ; 延遲
     push 1000
-    call game_delay@4
+    call game_delay
     
     jmp battle_loop
     
@@ -112,7 +114,7 @@ battle_end:
     pop ebx
     pop ebp
     ret
-process_boss_battle@0 ENDP
+process_boss_battle ENDP
 
 ; ============================================
 ; 顯示 Boss 出現動畫
@@ -121,24 +123,24 @@ show_boss_appear PROC
     ; 顯示警告訊息
     push 30
     push 10
-    call set_cursor@8
+    call set_cursor
     
     push COLOR_RED
     push OFFSET boss_appear
-    call print_color_string@8
+    call print_color_string
     
     ; 顯示 Boss 名稱
     push 33
     push 12
-    call set_cursor@8
+    call set_cursor
     
     push COLOR_YELLOW
     push OFFSET boss_name
-    call print_color_string@8
+    call print_color_string
     
     ; 延遲
     push 2000
-    call game_delay@4
+    call game_delay
     
     ret
 show_boss_appear ENDP
@@ -147,54 +149,54 @@ show_boss_appear ENDP
 ; 繪製 Boss 戰鬥畫面
 ; ============================================
 draw_boss_battle PROC
-    call clear_screen@0
+    call clear_screen
     
     ; 繪製 Boss ASCII 藝術
     push 35
     push 5
-    call set_cursor@8
+    call set_cursor
     push OFFSET boss_art1
-    call print_string@4
+    call print_string
     
     push 35
     push 6
-    call set_cursor@8
+    call set_cursor
     push OFFSET boss_art2
-    call print_string@4
+    call print_string
     
     push 35
     push 7
-    call set_cursor@8
+    call set_cursor
     push OFFSET boss_art3
-    call print_string@4
+    call print_string
     
     ; 顯示 Boss 血量
     push 30
     push 10
-    call set_cursor@8
+    call set_cursor
     push OFFSET boss_health_txt
-    call print_string@4
+    call print_string
     push boss_health
-    call print_number@4
+    call print_number
     
     ; 顯示戰鬥選項
     push 10
     push 15
-    call set_cursor@8
+    call set_cursor
     push OFFSET attack_option
-    call print_string@4
+    call print_string
     
     push 10
     push 16
-    call set_cursor@8
+    call set_cursor
     push OFFSET defend_option
-    call print_string@4
+    call print_string
     
     push 10
     push 17
-    call set_cursor@8
+    call set_cursor
     push OFFSET special_option
-    call print_string@4
+    call print_string
     
     ret
 draw_boss_battle ENDP
@@ -206,7 +208,7 @@ player_turn PROC
     push ebx
     
     ; 取得玩家選擇
-    call get_player_choice@0
+    call get_player_choice
     
     ; 根據選擇執行動作
     cmp eax, 0
@@ -246,15 +248,15 @@ boss_turn PROC
     ; Boss 攻擊訊息
     push 30
     push 20
-    call set_cursor@8
+    call set_cursor
     push OFFSET boss_attack_txt
-    call print_string@4
+    call print_string
     push boss_attack
-    call print_number@4
+    call print_number
     
     ; 延遲顯示
     push 1000
-    call game_delay@4
+    call game_delay
     
     pop ebx
     ret
@@ -264,18 +266,18 @@ boss_turn ENDP
 ; 顯示 Boss 擊敗訊息
 ; ============================================
 show_boss_defeat PROC
-    call clear_screen@0
+    call clear_screen
     
     push 25
     push 12
-    call set_cursor@8
+    call set_cursor
     
     push COLOR_GREEN
     push OFFSET boss_defeat
-    call print_color_string@8
+    call print_color_string
     
     push 2000
-    call game_delay@4
+    call game_delay
     
     ret
 show_boss_defeat ENDP
@@ -283,8 +285,8 @@ show_boss_defeat ENDP
 ; ============================================
 ; Boss AI 行為
 ; ============================================
-PUBLIC boss_ai@0
-boss_ai@0 PROC
+PUBLIC boss_ai
+boss_ai PROC
     ; 簡單的 AI 邏輯
     ; 可以根據血量改變行為
     
@@ -301,6 +303,6 @@ aggressive_mode:
     
 ai_done:
     ret
-boss_ai@0 ENDP
+boss_ai ENDP
 
 END

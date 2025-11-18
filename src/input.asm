@@ -4,8 +4,10 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
+
+
 
 ; Windows API
 GetStdHandle PROTO :DWORD
@@ -25,8 +27,8 @@ VK_A             equ 41h  ; A 鍵
 VK_D             equ 44h  ; D 鍵
 
 ; 外部程序
-EXTERN print_string@4:PROC
-EXTERN print_newline@0:PROC
+EXTERN print_string:PROC
+EXTERN print_newline:PROC
 
 .data
     PUBLIC input_char
@@ -43,27 +45,27 @@ EXTERN print_newline@0:PROC
 ; ============================================
 ; 初始化輸入系統
 ; ============================================
-PUBLIC init_input@0
-init_input@0 PROC
+PUBLIC init_input
+init_input PROC
     push STD_INPUT_HANDLE
     call GetStdHandle
     mov hStdInput, eax
     ret
-init_input@0 ENDP
+init_input ENDP
 
 ; ============================================
 ; 取得玩家選擇 (A=左, D=右)
 ; 返回: EAX = 0(左) or 1(右)
 ; ============================================
-PUBLIC get_player_choice@0
-get_player_choice@0 PROC
+PUBLIC get_player_choice
+get_player_choice PROC
     push ebx
     push ecx
     push edx
     
     ; 顯示提示
     push OFFSET select_prompt
-    call print_string@4
+    call print_string
     
 input_loop:
     ; 清空輸入緩衝區
@@ -105,24 +107,24 @@ select_right:
     mov eax, 1    ; 返回 1 表示右
     
 input_done:
-    call print_newline@0
+    call print_newline
     
     pop edx
     pop ecx
     pop ebx
     ret
-get_player_choice@0 ENDP
+get_player_choice ENDP
 
 ; ============================================
 ; 暫停等待按鍵
 ; ============================================
-PUBLIC wait_for_key@0
-wait_for_key@0 PROC
+PUBLIC wait_for_key
+wait_for_key PROC
     push edx
     
     ; 顯示提示訊息
     push OFFSET press_any_key
-    call print_string@4
+    call print_string
     
     ; 清空輸入緩衝區
     push hStdInput
@@ -138,15 +140,15 @@ wait_for_key@0 PROC
     
     pop edx
     ret
-wait_for_key@0 ENDP
+wait_for_key ENDP
 
 ; ============================================
 ; 檢查按鍵狀態 (非阻塞)
 ; 輸入: EAX = 虛擬鍵碼
 ; 返回: EAX = 1(按下) or 0(未按下)
 ; ============================================
-PUBLIC check_key_state@4
-check_key_state@4 PROC
+PUBLIC check_key_state
+check_key_state PROC
     push ebp
     mov ebp, esp
     
@@ -166,35 +168,35 @@ not_pressed:
 done:
     pop ebp
     ret 4
-check_key_state@4 ENDP
+check_key_state ENDP
 
 ; ============================================
 ; 取得方向鍵輸入
 ; 返回: EAX = 0(無), 1(左), 2(右), 3(上), 4(下)
 ; ============================================
-PUBLIC get_arrow_key@0
-get_arrow_key@0 PROC
+PUBLIC get_arrow_key
+get_arrow_key PROC
     ; 檢查左鍵
     push VK_LEFT
-    call check_key_state@4
+    call check_key_state
     test eax, eax
     jnz return_left
     
     ; 檢查右鍵
     push VK_RIGHT
-    call check_key_state@4
+    call check_key_state
     test eax, eax
     jnz return_right
     
     ; 檢查上鍵
     push VK_UP
-    call check_key_state@4
+    call check_key_state
     test eax, eax
     jnz return_up
     
     ; 檢查下鍵
     push VK_DOWN
-    call check_key_state@4
+    call check_key_state
     test eax, eax
     jnz return_down
     
@@ -217,6 +219,6 @@ return_up:
 return_down:
     mov eax, 4
     ret
-get_arrow_key@0 ENDP
+get_arrow_key ENDP
 
 END

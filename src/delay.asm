@@ -4,14 +4,16 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
+
+
 
 Sleep PROTO :DWORD
 
 .code
-PUBLIC game_delay@4
-game_delay@4 PROC
+PUBLIC game_delay
+game_delay PROC
     push ebp
     mov ebp, esp
 
@@ -20,6 +22,6 @@ game_delay@4 PROC
 
     pop ebp
     ret 4
-game_delay@4 ENDP
+game_delay ENDP
 
 END

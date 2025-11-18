@@ -50,7 +50,7 @@ ML /c /coff /Zi /Fo.\obj\levels.obj .\data\levels.asm
 if errorlevel 1 goto terminate
 
 REM link all object files into final executable
-LINK /INCREMENTAL:no /debug /subsystem:console /entry:_start /out:bin\game.exe obj\*.obj kernel32.lib user32.lib
+LINK /INCREMENTAL:no /debug /subsystem:console /entry:start /out:bin\game.exe obj\*.obj kernel32.lib user32.lib
 if errorlevel 1 goto terminate
 
 echo.

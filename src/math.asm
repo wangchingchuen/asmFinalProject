@@ -4,8 +4,10 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
+
+
 
 .data
     seed    dd 12345678h  ; 隨機數種子
@@ -17,8 +19,8 @@ option casemap:none
 ; 輸入: EAX = 第一個數, EBX = 第二個數
 ; 返回: EAX = 結果
 ; ============================================
-PUBLIC add_numbers@8
-add_numbers@8 PROC
+PUBLIC add_numbers
+add_numbers PROC
     push ebp
     mov ebp, esp
     
@@ -27,15 +29,15 @@ add_numbers@8 PROC
     
     pop ebp
     ret 8
-add_numbers@8 ENDP
+add_numbers ENDP
 
 ; ============================================
 ; 減法
 ; 輸入: EAX = 被減數, EBX = 減數
 ; 返回: EAX = 結果
 ; ============================================
-PUBLIC sub_numbers@8
-sub_numbers@8 PROC
+PUBLIC sub_numbers
+sub_numbers PROC
     push ebp
     mov ebp, esp
     
@@ -44,15 +46,15 @@ sub_numbers@8 PROC
     
     pop ebp
     ret 8
-sub_numbers@8 ENDP
+sub_numbers ENDP
 
 ; ============================================
 ; 乘法
 ; 輸入: EAX = 第一個數, EBX = 第二個數
 ; 返回: EAX = 結果
 ; ============================================
-PUBLIC mul_numbers@8
-mul_numbers@8 PROC
+PUBLIC mul_numbers
+mul_numbers PROC
     push ebp
     mov ebp, esp
     push ebx
@@ -64,15 +66,15 @@ mul_numbers@8 PROC
     pop ebx
     pop ebp
     ret 8
-mul_numbers@8 ENDP
+mul_numbers ENDP
 
 ; ============================================
 ; 除法
 ; 輸入: EAX = 被除數, EBX = 除數
 ; 返回: EAX = 商, EDX = 餘數
 ; ============================================
-PUBLIC div_numbers@8
-div_numbers@8 PROC
+PUBLIC div_numbers
+div_numbers PROC
     push ebp
     mov ebp, esp
     push ebx
@@ -96,15 +98,15 @@ div_done:
     pop ebx
     pop ebp
     ret 8
-div_numbers@8 ENDP
+div_numbers ENDP
 
 ; ============================================
 ; 取模運算
 ; 輸入: EAX = 被除數, EBX = 除數
 ; 返回: EAX = 餘數
 ; ============================================
-PUBLIC mod_numbers@8
-mod_numbers@8 PROC
+PUBLIC mod_numbers
+mod_numbers PROC
     push ebp
     mov ebp, esp
     push ebx
@@ -127,15 +129,15 @@ mod_done:
     pop ebx
     pop ebp
     ret 8
-mod_numbers@8 ENDP
+mod_numbers ENDP
 
 ; ============================================
 ; 生成隨機數
 ; 輸入: EAX = 最大值
 ; 返回: EAX = 0 到 最大值-1 的隨機數
 ; ============================================
-PUBLIC random@4
-random@4 PROC
+PUBLIC random
+random PROC
     push ebp
     mov ebp, esp
     push ebx
@@ -160,14 +162,14 @@ random@4 PROC
     pop ebx
     pop ebp
     ret 4
-random@4 ENDP
+random ENDP
 
 ; ============================================
 ; 設定隨機數種子
 ; 輸入: EAX = 新種子
 ; ============================================
-PUBLIC set_seed@4
-set_seed@4 PROC
+PUBLIC set_seed
+set_seed PROC
     push ebp
     mov ebp, esp
     
@@ -176,15 +178,15 @@ set_seed@4 PROC
     
     pop ebp
     ret 4
-set_seed@4 ENDP
+set_seed ENDP
 
 ; ============================================
 ; 計算絕對值
 ; 輸入: EAX = 數值
 ; 返回: EAX = 絕對值
 ; ============================================
-PUBLIC abs_value@4
-abs_value@4 PROC
+PUBLIC abs_value
+abs_value PROC
     push ebp
     mov ebp, esp
     
@@ -196,15 +198,15 @@ abs_value@4 PROC
 abs_done:
     pop ebp
     ret 4
-abs_value@4 ENDP
+abs_value ENDP
 
 ; ============================================
 ; 取最大值
 ; 輸入: EAX = 第一個數, EBX = 第二個數
 ; 返回: EAX = 較大的數
 ; ============================================
-PUBLIC max_value@8
-max_value@8 PROC
+PUBLIC max_value
+max_value PROC
     push ebp
     mov ebp, esp
     
@@ -216,15 +218,15 @@ max_value@8 PROC
 max_done:
     pop ebp
     ret 8
-max_value@8 ENDP
+max_value ENDP
 
 ; ============================================
 ; 取最小值
 ; 輸入: EAX = 第一個數, EBX = 第二個數
 ; 返回: EAX = 較小的數
 ; ============================================
-PUBLIC min_value@8
-min_value@8 PROC
+PUBLIC min_value
+min_value PROC
     push ebp
     mov ebp, esp
     
@@ -236,15 +238,15 @@ min_value@8 PROC
 min_done:
     pop ebp
     ret 8
-min_value@8 ENDP
+min_value ENDP
 
 ; ============================================
 ; 計算平方
 ; 輸入: EAX = 數值
 ; 返回: EAX = 平方值
 ; ============================================
-PUBLIC square@4
-square@4 PROC
+PUBLIC square
+square PROC
     push ebp
     mov ebp, esp
     push ebx
@@ -256,6 +258,6 @@ square@4 PROC
     pop ebx
     pop ebp
     ret 4
-square@4 ENDP
+square ENDP
 
 END

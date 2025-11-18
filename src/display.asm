@@ -4,8 +4,10 @@
 ; ============================================
 
 .386
-.model flat, stdcall
+.model flat, c
 option casemap:none
+
+
 
 ; ===== 引入函式庫 =====
 includelib kernel32.lib
@@ -45,19 +47,19 @@ COLOR_BRIGHT    equ 8
 ; ============================================
 ; 初始化顯示系統
 ; ============================================
-PUBLIC init_display@0
-init_display@0 PROC
+PUBLIC init_display
+init_display PROC
     push STD_OUTPUT_HANDLE
     call GetStdHandle
     mov hStdOutput, eax
     ret
-init_display@0 ENDP
+init_display ENDP
 
 ; ============================================
 ; 清除螢幕
 ; ============================================
-PUBLIC clear_screen@0
-clear_screen@0 PROC
+PUBLIC clear_screen
+clear_screen PROC
     push ebp
     mov ebp, esp
     sub esp, 8
@@ -90,14 +92,14 @@ clear_screen@0 PROC
     mov esp, ebp
     pop ebp
     ret
-clear_screen@0 ENDP
+clear_screen ENDP
 
 ; ============================================
 ; 設定游標位置
 ; 輸入: EAX = X座標, EDX = Y座標
 ; ============================================
-PUBLIC set_cursor@8
-set_cursor@8 PROC
+PUBLIC set_cursor
+set_cursor PROC
     push ebp
     mov ebp, esp
     
@@ -113,14 +115,14 @@ set_cursor@8 PROC
     
     pop ebp
     ret 8
-set_cursor@8 ENDP
+set_cursor ENDP
 
 ; ============================================
 ; 顯示字串
 ; 輸入: 堆疊上推入字串位址
 ; ============================================
-PUBLIC print_string@4
-print_string@4 PROC
+PUBLIC print_string
+print_string PROC 
     push ebp
     mov ebp, esp
     push ebx
@@ -150,24 +152,24 @@ found_end:
     pop ebx
     pop ebp
     ret 4
-print_string@4 ENDP
+print_string ENDP
 
 ; ============================================
 ; 顯示換行
 ; ============================================
-PUBLIC print_newline@0
-print_newline@0 PROC
+PUBLIC print_newline
+print_newline PROC
     push OFFSET newline_str
-    call print_string@4
+    call print_string
     ret
-print_newline@0 ENDP
+print_newline ENDP
 
 ; ============================================
 ; 顯示字元
 ; 輸入: AL = 字元
 ; ============================================
-PUBLIC print_char@4
-print_char@4 PROC
+PUBLIC print_char
+print_char PROC
     push ebp
     mov ebp, esp
     sub esp, 4
@@ -186,14 +188,14 @@ print_char@4 PROC
     mov esp, ebp
     pop ebp
     ret 4
-print_char@4 ENDP
+print_char ENDP
 
 ; ============================================
 ; 顯示數字 (十進位)
 ; 輸入: EAX = 數字
 ; ============================================
-PUBLIC print_number@4
-print_number@4 PROC
+PUBLIC print_number
+print_number PROC
     push ebp
     mov ebp, esp
     sub esp, 12  ; 數字緩衝區
@@ -227,7 +229,7 @@ convert_loop:
 print_result:
     inc edi
     push edi
-    call print_string@4
+    call print_string
     
     pop edi
     pop esi
@@ -235,14 +237,14 @@ print_result:
     mov esp, ebp
     pop ebp
     ret 4
-print_number@4 ENDP
+print_number ENDP
 
 ; ============================================
 ; 設定文字顏色
 ; 輸入: EAX = 顏色屬性
 ; ============================================
-PUBLIC set_color@4
-set_color@4 PROC
+PUBLIC set_color
+set_color PROC
     push ebp
     mov ebp, esp
     
@@ -252,31 +254,31 @@ set_color@4 PROC
     
     pop ebp
     ret 4
-set_color@4 ENDP
+set_color ENDP
 
 ; ============================================
 ; 顯示彩色字串
 ; 輸入: [ESP+4] = 字串位址, [ESP+8] = 顏色
 ; ============================================
-PUBLIC print_color_string@8
-print_color_string@8 PROC
+PUBLIC print_color_string
+print_color_string PROC
     push ebp
     mov ebp, esp
     
     ; 設定顏色
     push [ebp+12]
-    call set_color@4
+    call set_color
     
     ; 顯示字串
     push [ebp+8]
-    call print_string@4
+    call print_string
     
     ; 恢復預設顏色 (白色)
     push COLOR_WHITE
-    call set_color@4
+    call set_color
     
     pop ebp
     ret 8
-print_color_string@8 ENDP
+print_color_string ENDP
 
 END
