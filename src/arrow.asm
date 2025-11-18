@@ -73,7 +73,7 @@ display_arrow_info@0 PROC
     call set_cursor@8
     push OFFSET arrow_label
     call print_string@4
-    push arrow_count
+    push dword ptr arrow_count
     call print_number@4
 
     ; 顯示左選項
@@ -100,7 +100,6 @@ display_arrow_info@0 ENDP
 ; 顯示標籤文字
 arrow_label db "Arrows: ", 0
 
-END
 ; ============================================
 ; 套用左右選項效果
 ; 輸入：EAX = 0 (左) 或 1 (右)
@@ -146,63 +145,63 @@ apply_right:
 ; ============================================
 do_effect:
     cmp eax, 0
-    je eff_add1
+    je eff_add1_lbl
     cmp eax, 1
-    je eff_sub1
+    je eff_sub1_lbl
     cmp eax, 2
-    je eff_mul2
+    je eff_mul2_lbl
     cmp eax, 3
-    je eff_div2
+    je eff_div2_lbl
     cmp eax, 4
-    je eff_add5
+    je eff_add5_lbl
     cmp eax, 5
-    je eff_sub3
+    je eff_sub3_lbl
     jmp done
 
 ; ------ (+1)
-eff_add1:
+eff_add1_lbl:
     push 1
-    push arrow_count
+    push dword ptr arrow_count
     call add_numbers@8
     mov arrow_count, eax
     jmp done
 
 ; ------ (-1)
-eff_sub1:
+eff_sub1_lbl:
     push 1
-    push arrow_count
+    push dword ptr arrow_count
     call sub_numbers@8
     mov arrow_count, eax
     jmp done
 
 ; ------ (x2)
-eff_mul2:
+eff_mul2_lbl:
     push 2
-    push arrow_count
+    push dword ptr arrow_count
     call mul_numbers@8
     mov arrow_count, eax
     jmp done
 
 ; ------ (/2)
-eff_div2:
+eff_div2_lbl:
     push 2
-    push arrow_count
+    push dword ptr arrow_count
     call div_numbers@8
     mov arrow_count, eax
     jmp done
 
 ; ------ (+5)
-eff_add5:
+eff_add5_lbl:
     push 5
-    push arrow_count
+    push dword ptr arrow_count
     call add_numbers@8
     mov arrow_count, eax
     jmp done
 
 ; ------ (-3)
-eff_sub3:
+eff_sub3_lbl:
     push 3
-    push arrow_count
+    push dword ptr arrow_count
     call sub_numbers@8
     mov arrow_count, eax
     jmp done
