@@ -5,6 +5,7 @@ REM Uses MicroSoft Macro Assembler version 6.11 and 32-bit Incremental Linker ve
 REM delete related files
 REM 	del main.obj
 REM 	del main.exe
+REM 	del main.pdb
 
 
 REM /c          assemble without linking
